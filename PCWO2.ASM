@@ -8,7 +8,9 @@
 
 ; Constants
 ; 	Style
-	BackgroundStyle equ 40h	; Red text over black background
+	BackgroundStyle	equ 40h	; Black text over red background
+	TitleStyle 		equ 04h	; Red text over black background
+	LableStyle		equ 4fh ; White text over red background
 	
 .MODEL small
 
@@ -24,13 +26,11 @@
 	CPUBenchmarkLbl				db 'CPU Benchmark$'
 	FPUBenchmarkLbl				db 'FPU Benchmark$'
 	
-	; UI Style
-	TitleStyle					db 04h 
-	MenuOptionStyle				db 40h ; Black text over red background
-	SelectedOptionStyle 		db 70h ; Black text over white background
-	LableStyle					db 47h ; White text over red background
-	DynInfoStyle				db 40h ; Black text over red background
-	StatusStyle					db 40h ; Black text over red background
+;	MenuOptionStyle				db 40h ; Black text over red background
+;	SelectedOptionStyle 		db 70h ; Black text over white background
+
+;	DynInfoStyle				db 40h ; Black text over red background
+;	StatusStyle					db 40h ; Black text over red background
 	
 	; Text for the command line mode
     CommLineErrorMsg			db 'ERROR: Invalid command line option',13,10,'$' 
@@ -50,7 +50,10 @@
     ; Variables defined somewhere else
     EXTRN _SCRN_VideoMode:BYTE						; From LIB/SCREEN.ASM  
     EXTRN _SCRN_Character:BYTE
-	EXTRN _SCRN_Attribute:BYTE	
+	EXTRN _SCRN_Attribute:BYTE		
+	EXTRN _SCRN_Position_X:WORD
+	EXTRN _SCRN_Position_Y:BYTE
+
 	
 	; Public variables
 	PUBLIC _VerboseEnableFlag
@@ -71,7 +74,8 @@
 	EXTRN _SCRN_SET_BACKGROUND:PROC
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
-	
+	EXTRN _SCRN_PRINT_TEXT:PROC
+		
 	
 MAIN PROC										; Main program
 	.8086
@@ -175,14 +179,33 @@ UI_SETUP PROC
 	
 	mov _SCRN_VideoMode,01h				
 				
-	call _SCRN_SET_VIDEO_MODE			; Setup text mode 1 (40x25x16)
+	call _SCRN_SET_VIDEO_MODE					; Setup text mode 1 (40x25x16)
 	call _SCRN_DISABLE_CURSOR			 
 	call _SCRN_DISABLE_BLINKING_TEXT	
 	
-	mov _SCRN_Character,20h				; Space ASCII
+	mov _SCRN_Character,20h						; Space ASCII
 	mov _SCRN_Attribute,BackgroundStyle 
 	call _SCRN_SET_BACKGROUND
-		
+
+	mov _SCRN_Attribute,TitleStyle	
+	mov _SCRN_Position_X,1
+	mov _SCRN_Position_Y,1
+	lea si,WelcomeLbl
+	call _SCRN_PRINT_TEXT
+
+	mov _SCRN_Attribute,LableStyle	
+	mov _SCRN_Position_Y,2
+	lea si,InformationLbl
+	call _SCRN_PRINT_TEXT
+	
+	mov _SCRN_Position_Y,3
+	lea si,CPULbl
+	call _SCRN_PRINT_TEXT
+	
+	mov _SCRN_Position_Y,4
+	lea si,FPULbl
+	call _SCRN_PRINT_TEXT
+	
 	ret
 UI_SETUP ENDP
 
@@ -195,7 +218,7 @@ UI_SETUP ENDP
 ;----
 UI_TEARDOWN PROC
 	mov _SCRN_VideoMode,03h					
-	call _SCRN_SET_VIDEO_MODE			; Setup text mode 3 (80x25x16)
+	call _SCRN_SET_VIDEO_MODE					; Setup text mode 3 (80x25x16)
 	ret
 UI_TEARDOWN ENDP
 

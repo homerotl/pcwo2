@@ -5,21 +5,28 @@
 
 .DATA
 
-	_SCRN_VideoMode db 01h			; Public value for the video mode
+	_SCRN_VideoMode 			db 01h			; Public value for the video mode
 	PUBLIC _SCRN_VideoMode
 	
-	_SCRN_Character	db 20h
+	_SCRN_Character				db 20h
 	PUBLIC _SCRN_Character
 	
-	_SCRN_Attribute db 07h
+	_SCRN_Attribute 			db 07h
 	PUBLIC _SCRN_Attribute
 
+	_SCRN_Position_X 			dw 0
+	PUBLIC _SCRN_Position_X
+	
+	_SCRN_Position_Y 			db 0
+	PUBLIC _SCRN_Position_Y
+	
 .CODE		
 	
 	PUBLIC _SCRN_SET_VIDEO_MODE
 	PUBLIC _SCRN_SET_BACKGROUND
 	PUBLIC _SCRN_DISABLE_CURSOR
 	PUBLIC _SCRN_DISABLE_BLINKING_TEXT
+	PUBLIC _SCRN_PRINT_TEXT
 ;----
 ; _SCRN_SET_VIDEO_MODE
 ; Set screen to the mode specified on the public byte _VideoMode
@@ -98,5 +105,51 @@ _SCRN_DISABLE_BLINKING_TEXT PROC
 	pop ax
 	ret
 _SCRN_DISABLE_BLINKING_TEXT ENDP
+
+;----
+; _SCRN_PRINT_TEXT
+; Print text on the screen using the parameters provided. 
+; Assume DS is already pointing to the data segment and SI has the effective address
+; data segment
+; Inputs:
+;	_SCRN_Attribute - Attribute byte
+; 	_SCRN_Position_X - horizontal index where text will be displayed (byte)
+; 	_SCRN_Position_Y - vertical index where text will be displated (byte)
+; Output: none
+; Destroys: none
+;----
+_SCRN_PRINT_TEXT PROC
+	push ax						; Save registers
+	push cx
+	
+	mov ax,0b800h				; Text mode memory starts at 0b800h
+	mov es,ax					; Align ES
+	
+	mov al,_SCRN_Position_Y
+	mov cl,28h					
+	mul cl						; ax = (Y * 40) + X
+	add ax,_SCRN_Position_X
+	mov cl,2
+	mul cl
+	mov di,ax
+	mov ch,_SCRN_Attribute
+	
+pt_loop:
+	mov cl,[si]					; Copy character from the source
+	cmp cl,'$'					; While ref[si]!='$' {
+	je pt_end
+	
+	mov es:[di],cl				; Copy character
+	inc di
+	mov es:[di],ch				; Copy attribute byte to destination
+	inc di
+	inc si
+	jmp pt_loop
+	
+pt_end:
+	pop cx
+	pop ax						; Restore registers
+	ret
+_SCRN_PRINT_TEXT ENDP
 
 END
