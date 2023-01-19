@@ -11,6 +11,7 @@
 	BackgroundStyle	equ 40h	; Black text over red background
 	TitleStyle 		equ 04h	; Red text over black background
 	LableStyle		equ 4fh ; White text over red background
+	DynInfoStyle	equ 40h ; Black text over red background
 	
 .MODEL small
 
@@ -19,17 +20,39 @@
 .DATA
 	
 	; Text for the interactive mode
-    WelcomeLbl					db 'PC Workout by Homero Trevino - v1.000$'
+    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.000$'
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
 	FPULbl						db 'FPU$' 	
 	CPUBenchmarkLbl				db 'CPU Benchmark$'
 	FPUBenchmarkLbl				db 'FPU Benchmark$'
 	
+	CPU8086Lbl					db '8086/8088    $'
+	CPU286Lbl					db '80286        $'	
+	CPU386Lbl					db '80386        $'
+	CPU486Lbl					db '80486        $'			
+	CPUPentiumLbl				db 'Pentium      $'	
+	CPUPentiumProLbl			db 'PentiumPro   $'		
+	CPUUnknownLbl				db 'Unknown      $'
+	
+	FPUNoLbl					db 'Not present  $'
+	FPUPresentLbl				db 'Present      $'
+	FPU287Lbl					db '287          $'
+	FPU387Lbl					db '387          $'
+	FPUUnknownLbl				db 'Unknown      $'
+
+;       2=Intel 286 processor
+;       3=Intel386(TM) family processor
+;       4=Intel486(TM) family processor
+;       5=Pentium(R) family processor
+;       6=Pentium(R) Pro family processor
+; *    10=Unknown processor
+
+
 ;	MenuOptionStyle				db 40h ; Black text over red background
 ;	SelectedOptionStyle 		db 70h ; Black text over white background
 
-;	DynInfoStyle				db 40h ; Black text over red background
+
 ;	StatusStyle					db 40h ; Black text over red background
 	
 	; Text for the command line mode
@@ -48,12 +71,14 @@
     
     
     ; Variables defined somewhere else
-    EXTRN _SCRN_VideoMode:BYTE						; From LIB/SCREEN.ASM  
+    EXTRN _SCRN_VideoMode:BYTE					; From LIB/SCREEN.ASM  
     EXTRN _SCRN_Character:BYTE
 	EXTRN _SCRN_Attribute:BYTE		
 	EXTRN _SCRN_Position_X:WORD
 	EXTRN _SCRN_Position_Y:BYTE
-
+	EXTRN _cpu_type:BYTE						; From LIB/CPUID3A.ASM
+	EXTRN _fpu_type:BYTE
+	EXTRN _cpuid_flag:BYTE
 	
 	; Public variables
 	PUBLIC _VerboseEnableFlag
@@ -75,8 +100,9 @@
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
 	EXTRN _SCRN_PRINT_TEXT:PROC
-		
-	
+	EXTRN _get_cpu_type:PROC					; From LIB/CPUID3A.ASM
+	EXTRN _get_fpu_type:PROC
+
 MAIN PROC										; Main program
 	.8086
 	call _CL_PARSE_COMMAND_LINE
@@ -92,7 +118,7 @@ MAIN PROC										; Main program
 
 	call UI_SETUP								; Change video mode and paint initial screen
 	
-	; call OT_DETECTION							; Run one-time detection procedure
+	call OT_DETECTION							; Run one-time detection procedure
 	
 m_interactive_loop:
 
@@ -206,8 +232,117 @@ UI_SETUP PROC
 	lea si,FPULbl
 	call _SCRN_PRINT_TEXT
 	
+	mov _SCRN_Position_X,19
+	mov _SCRN_Position_Y,3
+	lea si,CPUBenchmarkLbl
+	call _SCRN_PRINT_TEXT
+	
+	mov _SCRN_Position_Y,4
+	lea si,FPUBenchmarkLbl
+	call _SCRN_PRINT_TEXT	
+	
 	ret
 UI_SETUP ENDP
+
+;----
+; Run one-time detection routines. Set found values to the screen
+; Inputs: None
+; Output: None
+; Destroys: None
+;----
+OT_DETECTION PROC
+	
+	call _get_cpu_type
+	call _get_fpu_type
+
+	mov _SCRN_Attribute,DynInfoStyle	
+	mov _SCRN_Position_X,5
+	mov _SCRN_Position_Y,3
+		
+	cmp _cpu_type,0
+	je otd_8086
+	
+	cmp _cpu_type,2
+	je otd_286
+	
+	cmp _cpu_type,3
+	je otd_386
+	
+	cmp _cpu_type,4
+	je otd_486
+	
+	cmp _cpu_type,5
+	je otd_Pentium		
+	
+	cmp _cpu_type,6
+	je otd_PentiumPro
+
+	lea si,CPUUnknownLbl
+	jmp otd_fpu_detection
+
+otd_8086:
+	lea si,CPU8086Lbl
+	jmp otd_fpu_detection
+	
+otd_286:
+	lea si,CPU286Lbl
+	jmp otd_fpu_detection
+
+otd_386:
+	lea si,CPU386Lbl
+	jmp otd_fpu_detection
+	
+otd_486:
+	lea si,CPU486Lbl
+	jmp otd_fpu_detection
+	
+otd_Pentium:
+	lea si,CPUPentiumLbl
+	jmp otd_fpu_detection
+	
+otd_PentiumPro:
+	lea si,CPUPentiumProLbl
+	jmp otd_fpu_detection
+	
+otd_fpu_detection:
+	call _SCRN_PRINT_TEXT			; Print the CPU detection
+	
+	mov _SCRN_Position_Y,4			; Move cursor down
+	cmp _fpu_type,0
+	je otd_no_fpu
+	
+	cmp _fpu_type,1
+	je otd_fpu
+	
+	cmp _fpu_type,2
+	je otd_287
+
+	cmp _fpu_type,3
+	je otd_387
+
+	lea si,FPUUnknownLbl
+	jmp otd_end
+
+otd_no_fpu:
+	lea si,FPUNoLbl
+	jmp otd_end
+
+otd_fpu:
+	lea si,FPUPresentLbl
+	jmp otd_end
+	
+otd_287:
+	lea si,FPU287Lbl
+	jmp otd_end
+	
+otd_387:
+	lea si,FPU387Lbl
+	jmp otd_end
+		
+otd_end:
+	call _SCRN_PRINT_TEXT
+	ret
+OT_DETECTION ENDP
 
 ;----
 ; UI_TEARDOWN
