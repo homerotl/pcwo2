@@ -116,7 +116,7 @@ _SCRN_DISABLE_BLINKING_TEXT ENDP
 ; 	_SCRN_Position_X - horizontal index where text will be displayed (byte)
 ; 	_SCRN_Position_Y - vertical index where text will be displated (byte)
 ; Output: none
-; Destroys: none
+; Destroys: ES
 ;----
 _SCRN_PRINT_TEXT PROC
 	push ax						; Save registers
@@ -126,11 +126,10 @@ _SCRN_PRINT_TEXT PROC
 	mov es,ax					; Align ES
 	
 	mov al,_SCRN_Position_Y
-	mov cl,28h					
+	mov cl,28h                  ; 28h = 40 for 40 col  mode					
 	mul cl						; ax = (Y * 40) + X
-	add ax,_SCRN_Position_X
-	mov cl,2
-	mul cl
+	add ax,_SCRN_Position_X     
+	shl ax,1                    ; shift bits left to multiply by 2
 	mov di,ax
 	mov ch,_SCRN_Attribute
 	

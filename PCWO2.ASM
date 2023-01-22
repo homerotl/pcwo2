@@ -8,11 +8,12 @@
 
 ; Constants
 ; 	Style
-	BackgroundStyle	equ 40h	; Black text over red background
-	TitleStyle 		equ 04h	; Red text over black background
-	LableStyle		equ 4fh ; White text over red background
-	DynInfoStyle	equ 40h ; Black text over red background
-	
+	BackgroundStyle        equ 40h ; Black text over red background
+	TitleStyle             equ 04h ; Red text over black background
+	LableStyle             equ 4fh ; White text over red background
+	DynInfoStyle           equ 40h ; Black text over red background
+	MenuOptionStyle	       equ 04h ; Red text over black background
+	SelectedOptionStyle    equ 70h ; Black text over white background
 .MODEL small
 
 .STACK 100h
@@ -41,16 +42,13 @@
 	FPU387Lbl					db '387          $'
 	FPUUnknownLbl				db 'Unknown      $'
 
-;       2=Intel 286 processor
-;       3=Intel386(TM) family processor
-;       4=Intel486(TM) family processor
-;       5=Pentium(R) family processor
-;       6=Pentium(R) Pro family processor
-; *    10=Unknown processor
+    ; Menu options
+    MenuOp1Lbl                  db '[1]Floppy Test    $'
+    MenuOp1Lb2                  db '[2]Video Test     $'
+    MenuOp1Lb3                  db '[3]PC Speaker Test$'
+    
 
 
-;	MenuOptionStyle				db 40h ; Black text over red background
-;	SelectedOptionStyle 		db 70h ; Black text over white background
 
 
 ;	StatusStyle					db 40h ; Black text over red background
@@ -122,7 +120,7 @@ MAIN PROC										; Main program
 	
 m_interactive_loop:
 
-	; call DRAW_MENU							; Draw menu on its current state
+    call DISPLAY_MENU							; Display menu
 
 	call INPUT_DISPATCH							; Wait for KB input and act on it
 
@@ -232,7 +230,7 @@ UI_SETUP PROC
 	lea si,FPULbl
 	call _SCRN_PRINT_TEXT
 	
-	mov _SCRN_Position_X,19
+	mov _SCRN_Position_X,13h
 	mov _SCRN_Position_Y,3
 	lea si,CPUBenchmarkLbl
 	call _SCRN_PRINT_TEXT
@@ -358,6 +356,32 @@ UI_TEARDOWN PROC
 UI_TEARDOWN ENDP
 
 ;----
+; DISPLAY_MENU
+; Render all menu options in their correct status
+; Inputs: None
+; Output: None
+; Destroys: None
+;----
+DISPLAY_MENU PROC
+	mov _SCRN_Attribute,MenuOptionStyle	
+	mov _SCRN_Position_X,1
+	mov _SCRN_Position_Y,6
+	lea si,MenuOp1Lbl
+	call _SCRN_PRINT_TEXT
+	
+    mov _SCRN_Position_X,1
+	mov _SCRN_Position_Y,8
+	lea si,MenuOp1Lb2
+	call _SCRN_PRINT_TEXT
+	
+	mov _SCRN_Position_Y,0Ah
+	lea si,MenuOp1Lb3
+	call _SCRN_PRINT_TEXT
+	
+	ret
+DISPLAY_MENU ENDP
+
+;----
 ; INPUT_DISPATCH
 ; Wait for input on the keyboard and dpending on it take action
 ; Inputs: None
@@ -368,5 +392,6 @@ INPUT_DISPATCH PROC
 	call _KB_WAIT_ANY_KEY
 	ret
 INPUT_DISPATCH EndP
+
 
 END

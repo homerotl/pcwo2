@@ -6,3 +6,7 @@
 
 # Executables
 *.exe
+
+# Borland debug and config files
+*.td
+*.tr
