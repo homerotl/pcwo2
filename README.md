@@ -22,7 +22,7 @@ The program is portable. No installation is needed. Just copy the `PCWO2.EXE`
 file and run it from the command line. Follow the instructions.
 
 ## Binary
-Use the following [link](http://homerotl.com/pcwo2/pcwo2_build001.zip) to download the 
+Use the following [link](http://homerotl.com/downloads/pcwo2/pcwo2_build001.zip) to download the 
 latest public build of this program. 
 
 ## Compiling PCWO2

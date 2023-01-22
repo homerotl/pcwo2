@@ -14,6 +14,7 @@
 	DynInfoStyle           equ 40h ; Black text over red background
 	MenuOptionStyle	       equ 04h ; Red text over black background
 	SelectedOptionStyle    equ 70h ; Black text over white background
+	StatusStyle            equ 40h ; Black text over red background
 .MODEL small
 
 .STACK 100h
@@ -46,12 +47,6 @@
     MenuOp1Lbl                  db '[1]Floppy Test    $'
     MenuOp1Lb2                  db '[2]Video Test     $'
     MenuOp1Lb3                  db '[3]PC Speaker Test$'
-    
-
-
-
-
-;	StatusStyle					db 40h ; Black text over red background
 	
 	; Text for the command line mode
     CommLineErrorMsg			db 'ERROR: Invalid command line option',13,10,'$' 
@@ -124,8 +119,7 @@ m_interactive_loop:
 
 	call INPUT_DISPATCH							; Wait for KB input and act on it
 
-	;je ProgramExitSignal,0						; 
-	
+	;cmp ProgramExitSignal                      ; Check for exit signal
 	;jmp m_interactive_loop
 
 	call UI_TEARDOWN							; Return to 80 column text mode 
