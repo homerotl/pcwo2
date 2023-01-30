@@ -2,8 +2,8 @@
 # This makefile assumes you are using Borland's Turbo Assembler.
 # If that is not the case, you will need to change the tasm and tlink lines to masm and link
 #
-pcwo2.exe: pcwo2.obj commln.obj lib\kb.obj lib\screen.obj lib\cpuid3a.obj
-	tlink /3 /v /m /s pcwo2 commln lib\screen lib\kb lib\cpuid3a;
+pcwo2.exe: pcwo2.obj commln.obj dispatch.obj lib\kb.obj lib\screen.obj lib\cpuid3a.obj
+	tlink /3 pcwo2 commln dispatch lib\screen lib\kb lib\cpuid3a;
 	
 pcwo2.obj:			pcwo2.asm
 	tasm pcwo2;
@@ -11,6 +11,9 @@ pcwo2.obj:			pcwo2.asm
 commln.obj:			commln.asm
 	tasm commln;
 
+dispatch.obj:       dispatch.asm
+	tasm dispatch;
+	
 lib\kb.obj:			lib\kb.asm
 	tasm lib\kb lib\kb.obj;
 

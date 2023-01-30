@@ -13,8 +13,9 @@
 	LableStyle             equ 4fh ; White text over red background
 	DynInfoStyle           equ 40h ; Black text over red background
 	MenuOptionStyle	       equ 04h ; Red text over black background
-	SelectedOptionStyle    equ 70h ; Black text over white background
+	;SelectedOptionStyle    equ 70h ; Black text over white background
 	StatusStyle            equ 40h ; Black text over red background
+	
 .MODEL small
 
 .STACK 100h
@@ -22,7 +23,7 @@
 .DATA
 	
 	; Text for the interactive mode
-    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.000$'
+    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.002$'
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
 	FPULbl						db 'FPU$' 	
@@ -44,9 +45,10 @@
 	FPUUnknownLbl				db 'Unknown      $'
 
     ; Menu options
-    MenuOp1Lbl                  db '[1]Floppy Test    $'
-    MenuOp1Lb2                  db '[2]Video Test     $'
-    MenuOp1Lb3                  db '[3]PC Speaker Test$'
+    MenuOp1Lbl                  db '[F2]Floppy Test   $'
+    MenuOp1Lb2                  db '[F3]Video Test    $'
+    MenuOp1Lb3                  db '[F4]Speaker Test  $'
+	EscExitLbl                  db '[F10]Exit$'
 	
 	; Text for the command line mode
     CommLineErrorMsg			db 'ERROR: Invalid command line option',13,10,'$' 
@@ -87,6 +89,7 @@
 .CODE
 
 	EXTRN _CL_PARSE_COMMAND_LINE:PROC			; From COMMLN.ASM
+	EXTRN _DISPATCHER:PROC                      ; From DISPATCH.ASM
 	EXTRN _KB_WAIT_ANY_KEY:PROC					; From LIB/KB.ASM
 	EXTRN _SCRN_SET_VIDEO_MODE:PROC				; From LIB/SCREEN.ASM
 	EXTRN _SCRN_SET_BACKGROUND:PROC
@@ -95,6 +98,7 @@
 	EXTRN _SCRN_PRINT_TEXT:PROC
 	EXTRN _get_cpu_type:PROC					; From LIB/CPUID3A.ASM
 	EXTRN _get_fpu_type:PROC
+	
 
 MAIN PROC										; Main program
 	.8086
@@ -117,7 +121,7 @@ m_interactive_loop:
 
     call DISPLAY_MENU							; Display menu
 
-	call INPUT_DISPATCH							; Wait for KB input and act on it
+	call _DISPATCHER                            ; Wait for KB input and act on it
 
 	;cmp ProgramExitSignal                      ; Check for exit signal
 	;jmp m_interactive_loop
@@ -372,20 +376,12 @@ DISPLAY_MENU PROC
 	lea si,MenuOp1Lb3
 	call _SCRN_PRINT_TEXT
 	
+	mov _SCRN_Position_Y,17h
+	lea si,EscExitLbl
+	call _SCRN_PRINT_TEXT
+	
 	ret
 DISPLAY_MENU ENDP
-
-;----
-; INPUT_DISPATCH
-; Wait for input on the keyboard and dpending on it take action
-; Inputs: None
-; Output: None
-; Destroys: None
-;----
-INPUT_DISPATCH PROC
-	call _KB_WAIT_ANY_KEY
-	ret
-INPUT_DISPATCH EndP
 
 
 END

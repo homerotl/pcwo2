@@ -7,7 +7,7 @@
 .CODE
 	PUBLIC _KB_YES_NO_Q
 	PUBLIC _KB_WAIT_ANY_KEY
-	
+	PUBLIC _KB_READ_KEY
 ;----
 ; _KB_YES_NO_Q 
 ; Wait for a Y/N answer (case insensitive)
@@ -62,5 +62,31 @@ _KB_WAIT_ANY_KEY PROC
 	pop ax
 
 	ret
-_KB_WAIT_ANY_KEY EndP
+_KB_WAIT_ANY_KEY ENDP
+
+
+;----
+; _KB_READ_KEY
+; Read one key from the keyboard
+; Inputs:
+; 	- None
+; Output: 
+;	- al: character code unless AH = 1
+;   - ah: 0 if read is ASCII, 1 if read special key
+; Destroys: ax
+;----
+_KB_READ_KEY PROC
+    xor ah,ah
+    int 16h
+    or al,al
+    jz rk_extended_code
+    xor ah,ah
+rk_done_reading:
+    ret
+rk_extended_code:
+    mov al,ah
+    mov ah,1
+    jmp rk_done_reading
+_KB_READ_KEY ENDP
+
 END
