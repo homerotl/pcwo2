@@ -23,7 +23,7 @@
 .DATA
 	
 	; Text for the interactive mode
-    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.002$'
+    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.003$'
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
 	FPULbl						db 'FPU$' 	
@@ -74,7 +74,7 @@
 	EXTRN _cpu_type:BYTE						; From LIB/CPUID3A.ASM
 	EXTRN _fpu_type:BYTE
 	EXTRN _cpuid_flag:BYTE
-	
+
 	; Public variables
 	PUBLIC _VerboseEnableFlag
     _VerboseEnableFlag			db 0
@@ -98,7 +98,6 @@
 	EXTRN _SCRN_PRINT_TEXT:PROC
 	EXTRN _get_cpu_type:PROC					; From LIB/CPUID3A.ASM
 	EXTRN _get_fpu_type:PROC
-	
 
 MAIN PROC										; Main program
 	.8086

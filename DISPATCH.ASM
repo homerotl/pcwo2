@@ -10,14 +10,17 @@
 .MODEL small
 
 .CODE
-	EXTRN _SCRN_PRINT_TEXT:PROC
-	
+	EXTRN _SCRN_PRINT_TEXT:PROC            ; From LIB/SCREEN.ASM
+	EXTRN _TEST_PC_SPEAKER:PROC            ; From T_SPEAKER.ASM 
+		
 .DATA
 	
 	; Status texts
-    StatusLbl1  db 'Option 1$'
-    StatusLbl2  db 'Option 2$'
-    StatusLbl3  db 'Option 3$'
+    PCSpeakerMsg    db 'Playing Sound...$'
+    BlankStatusMsg  db '                $'
+
+    StatusLbl1  db 'Option 2$'
+    StatusLbl2  db 'Option 3$'
 
 	
 	EXTRN _SCRN_Attribute:BYTE             ; From LIB/SCREEN.ASM 
@@ -115,11 +118,20 @@ _VIDEO_TEST ENDP
 
 ; Dummy proc
 _PC_SPEAKER_TEST PROC
-    mov _SCRN_Attribute,StatusStyle	
-	mov _SCRN_Position_X,0eh
-	mov _SCRN_Position_Y,17h
-	lea si,StatusLbl3
+
+	mov _SCRN_Attribute,StatusStyle	
+	mov _SCRN_Position_X,0eh     ; 14
+	mov _SCRN_Position_Y,17h     ; 23
+	lea si,PCSpeakerMsg
 	call _SCRN_PRINT_TEXT
+	
+	call _TEST_PC_SPEAKER
+	
+	mov _SCRN_Position_X,0eh     ; 14
+	mov _SCRN_Position_Y,17h     ; 23
+	lea si,BlankStatusMsg
+	call _SCRN_PRINT_TEXT
+	
 	ret
 _PC_SPEAKER_TEST EndP
 
