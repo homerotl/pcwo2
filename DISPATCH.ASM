@@ -11,7 +11,11 @@
 
 .CODE
 	EXTRN _SCRN_PRINT_TEXT:PROC            ; From LIB/SCREEN.ASM
+	EXTRN _SCRN_SAVE_SCR:PROC
+	EXTRN _SCRN_RESTORE_SCR:PROC       
+	
 	EXTRN _TEST_PC_SPEAKER:PROC            ; From T_SPEAKER.ASM 
+	EXTRN _SCREEN_GEOMETRY_TEST:PROC       ; From T_SCREEN.ASM 
 		
 .DATA
 	
@@ -108,11 +112,13 @@ _FLOPPY_TEST ENDP
 
 ; Dummy proc
 _VIDEO_TEST PROC
-    mov _SCRN_Attribute,StatusStyle	
-	mov _SCRN_Position_X,0eh
-	mov _SCRN_Position_Y,17h
-	lea si,StatusLbl2
-	call _SCRN_PRINT_TEXT
+	
+	call _SCRN_SAVE_SCR                    ; save current screen
+
+	call _SCREEN_GEOMETRY_TEST             ; execute the test and wait for a key
+
+    call _SCRN_RESTORE_SCR	               ; restore screen
+    	
 	ret
 _VIDEO_TEST ENDP
 
