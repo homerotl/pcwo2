@@ -4,6 +4,8 @@
 .MODEL small
 
 .CODE
+	.8086
+	
 	PUBLIC _TEST_PC_SPEAKER
 
 ;----

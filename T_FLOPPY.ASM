@@ -49,6 +49,7 @@ MAX_RETRIES EQU 4
 	EXTRN _CRLF:BYTE
 	
 .CODE
+    .8086
 JUMPS
 
 	EXTRN _TOSTRING:PROC				 	; Required predures defined elsewhere	

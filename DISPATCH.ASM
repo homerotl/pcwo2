@@ -8,14 +8,6 @@
 	ExitKeyScanCode        equ 44h ; F10
 		
 .MODEL small
-
-.CODE
-	EXTRN _SCRN_PRINT_TEXT:PROC            ; From LIB/SCREEN.ASM
-	EXTRN _SCRN_SAVE_SCR:PROC
-	EXTRN _SCRN_RESTORE_SCR:PROC       
-	
-	EXTRN _TEST_PC_SPEAKER:PROC            ; From T_SPEAKER.ASM 
-	EXTRN _SCREEN_GEOMETRY_TEST:PROC       ; From T_SCREEN.ASM 
 		
 .DATA
 	
@@ -49,8 +41,19 @@
         db  0                               ; End of table
 
 .CODE
+	.8086
+	
+	EXTRN _SCRN_PRINT_TEXT:PROC            ; From LIB/SCREEN.ASM
+	EXTRN _SCRN_SAVE_SCR:PROC
+	EXTRN _SCRN_RESTORE_SCR:PROC       
+	
+	EXTRN _TEST_PC_SPEAKER:PROC            ; From T_SPEAKER.ASM 
+	EXTRN _SCREEN_GEOMETRY_TEST:PROC       ; From T_SCREEN.ASM 
+
+    EXTRN _KB_READ_KEY:PROC                ; From LIB/KB.ASM
+    	
     PUBLIC _DISPATCHER
-    EXTRN _KB_READ_KEY:PROC
+
 
 _DISPATCHER PROC
     push ax

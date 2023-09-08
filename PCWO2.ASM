@@ -23,7 +23,7 @@
 .DATA
 	
 	; Text for the interactive mode
-    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.005$'
+    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.006$'
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
 	FPULbl						db 'FPU$' 	

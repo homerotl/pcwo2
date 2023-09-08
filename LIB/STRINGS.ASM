@@ -10,6 +10,7 @@
 	_NumToAsciiB  db '   $'
 	_CRLF		 db 13,10,'$' 
 .CODE
+	.8086
 	PUBLIC _TOSTRING
 
 ;----
