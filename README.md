@@ -16,6 +16,9 @@ this project is my pretext to learn it.
 ## Available Tests
 
  * CPU Information
+ * PC Speaker buzzer test
+ * Screen geometry test
+
 
 ## Usage
 The program is portable. No installation is needed. Just copy the `PCWO2.EXE` 

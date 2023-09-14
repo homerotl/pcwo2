@@ -2,7 +2,7 @@
 ; Operations affecting the screen like text mode changes and other routines
 ; Author: Homero Trevino <homerotl@gmail.com>
 .MODEL small
-
+	
 .DATA
     
     SAVE_SCR_BUFF               db 2000 dup(0)  ; Buffer to save the screen
@@ -16,12 +16,12 @@
 	_SCRN_Attribute 			db 07h
 	PUBLIC _SCRN_Attribute
 
-	_SCRN_Position_X 			dw 0
+	_SCRN_Position_X 			db 0
 	PUBLIC _SCRN_Position_X
 	
 	_SCRN_Position_Y 			db 0
 	PUBLIC _SCRN_Position_Y
-		
+	
 .CODE		
 	.8086
 		
@@ -32,6 +32,7 @@
 	PUBLIC _SCRN_PRINT_TEXT
 	PUBLIC _SCRN_SAVE_SCR
 	PUBLIC _SCRN_RESTORE_SCR
+
 	
 ;----
 ; _SCRN_SET_VIDEO_MODE
@@ -127,6 +128,7 @@ _SCRN_DISABLE_BLINKING_TEXT ENDP
 _SCRN_PRINT_TEXT PROC
 	push ax						; Save registers
 	push cx
+	push si
 	
 	mov ax,0b800h				; Text mode memory starts at 0b800h
 	mov es,ax					; Align ES
@@ -134,7 +136,9 @@ _SCRN_PRINT_TEXT PROC
 	mov al,_SCRN_Position_Y
 	mov cl,28h                  ; 28h = 40 for 40 col  mode					
 	mul cl						; ax = (Y * 40) + X
-	add ax,_SCRN_Position_X     
+	mov cl,_SCRN_Position_X     ; cx = 00 xx
+	mov ch,00h
+	add ax,cx                   ; ax = ax + cx
 	shl ax,1                    ; shift bits left to multiply by 2
 	mov di,ax
 	mov ch,_SCRN_Attribute
@@ -152,6 +156,7 @@ pt_loop:
 	jmp pt_loop
 	
 pt_end:
+    pop si
     pop cx
 	pop ax                      ; Restore registers
 	ret

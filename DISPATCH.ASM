@@ -20,7 +20,7 @@
 
 	
 	EXTRN _SCRN_Attribute:BYTE             ; From LIB/SCREEN.ASM 
-	EXTRN _SCRN_Position_X:WORD
+	EXTRN _SCRN_Position_X:BYTE
 	EXTRN _SCRN_Position_Y:BYTE
 	
     
@@ -42,18 +42,20 @@
 
 .CODE
 	.8086
-	
-	EXTRN _SCRN_PRINT_TEXT:PROC            ; From LIB/SCREEN.ASM
-	EXTRN _SCRN_SAVE_SCR:PROC
-	EXTRN _SCRN_RESTORE_SCR:PROC       
-	
+
+	EXTRN _UI_SET_STATUS:PROC              ; From UI.ASM 
+
 	EXTRN _TEST_PC_SPEAKER:PROC            ; From T_SPEAKER.ASM 
 	EXTRN _SCREEN_GEOMETRY_TEST:PROC       ; From T_SCREEN.ASM 
+    EXTRN _TEST_FLOPPY:PROC                ; From T_FLOPPY.ASM
 
+		
+	EXTRN _SCRN_SAVE_SCR:PROC              ; From LIB/SCREEN.ASM
+	EXTRN _SCRN_RESTORE_SCR:PROC    
+		   
     EXTRN _KB_READ_KEY:PROC                ; From LIB/KB.ASM
-    	
+ 
     PUBLIC _DISPATCHER
-
 
 _DISPATCHER PROC
     push ax
@@ -105,11 +107,7 @@ _DISPATCHER ENDP
 
 ; Dummy proc
 _FLOPPY_TEST PROC
-    mov _SCRN_Attribute,StatusStyle	
-	mov _SCRN_Position_X,0eh
-	mov _SCRN_Position_Y,17h
-	lea si,StatusLbl1
-	call _SCRN_PRINT_TEXT
+    call _TEST_FLOPPY
     ret
 _FLOPPY_TEST ENDP
 
@@ -117,9 +115,7 @@ _FLOPPY_TEST ENDP
 _VIDEO_TEST PROC
 	
 	call _SCRN_SAVE_SCR                    ; save current screen
-
 	call _SCREEN_GEOMETRY_TEST             ; execute the test and wait for a key
-
     call _SCRN_RESTORE_SCR	               ; restore screen
     	
 	ret
@@ -128,18 +124,12 @@ _VIDEO_TEST ENDP
 ; Dummy proc
 _PC_SPEAKER_TEST PROC
 
-	mov _SCRN_Attribute,StatusStyle	
-	mov _SCRN_Position_X,0eh     ; 14
-	mov _SCRN_Position_Y,17h     ; 23
-	lea si,PCSpeakerMsg
-	call _SCRN_PRINT_TEXT
+	lea si,PCSpeakerMsg		
+    call _UI_SET_STATUS
 	
 	call _TEST_PC_SPEAKER
 	
-	mov _SCRN_Position_X,0eh     ; 14
-	mov _SCRN_Position_Y,17h     ; 23
-	lea si,BlankStatusMsg
-	call _SCRN_PRINT_TEXT
+    call _UI_SET_STATUS
 	
 	ret
 _PC_SPEAKER_TEST EndP

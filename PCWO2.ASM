@@ -23,7 +23,7 @@
 .DATA
 	
 	; Text for the interactive mode
-    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.006$'
+    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.007 $'
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
 	FPULbl						db 'FPU$' 	
@@ -45,10 +45,10 @@
 	FPUUnknownLbl				db 'Unknown      $'
 
     ; Menu options
-    MenuOp1Lbl                  db '[F2]Floppy Test   $'
-    MenuOp1Lb2                  db '[F3]Video Test    $'
-    MenuOp1Lb3                  db '[F4]Speaker Test  $'
-	EscExitLbl                  db '[F10]Exit$'
+    MenuOp1Lbl                  db '[F2] Floppy Test  $'
+    MenuOp1Lb2                  db '[F3] Video Test   $'
+    MenuOp1Lb3                  db '[F4] Speaker Test $'
+	EscExitLbl                  db '[F10] Exit$'
 	
 	; Text for the command line mode
     CommLineErrorMsg			db 'ERROR: Invalid command line option',13,10,'$' 
@@ -69,7 +69,7 @@
     EXTRN _SCRN_VideoMode:BYTE					; From LIB/SCREEN.ASM  
     EXTRN _SCRN_Character:BYTE
 	EXTRN _SCRN_Attribute:BYTE		
-	EXTRN _SCRN_Position_X:WORD
+	EXTRN _SCRN_Position_X:BYTE
 	EXTRN _SCRN_Position_Y:BYTE
 	EXTRN _cpu_type:BYTE						; From LIB/CPUID3A.ASM
 	EXTRN _fpu_type:BYTE
