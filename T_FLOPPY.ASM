@@ -14,6 +14,8 @@ MAX_RETRIES EQU 4
 	SectorsToRead		db 0
 	CylindersToRead		db 0
 	
+	ReadTestStatus		db 0
+	
 	StatusEnumDrivesMsg	db 'Counting drives...$' 		
 	StatusDetDrTypeMsg  db 'Detect drive type...$' 
 	StatusDetMefTypeMsg db 'Detect media type...$' 
@@ -40,6 +42,10 @@ MAX_RETRIES EQU 4
 	DMT_4				db '2.88MB$'
 	DMT_UK				db 'Unknown$'
 	
+	FDTestSuccess       db 'Success!  $'
+    FDTestFail          db 'Test Fail $'
+    FDTestAbort         db 'Aborted   $'
+    
     
 	EXTRN _VerboseEnableFlag:BYTE	; Global flags
 	EXTRN _AutoRunFlag:BYTE							
@@ -75,6 +81,8 @@ JUMPS
     EXTRN _UI_CLEAR_STATUS:PROC
     EXTRN _UI_PRINT_TRACK_NUM:PROC
     EXTRN _UI_DISPLAY_FD_PROGRESS:PROC
+    EXTRN _UI_FD_READ_TEST_RESULT:PROC
+
         
 	EXTRN _KB_WAIT_ANY_KEY:PROC                      ; From LIB/KB.ASM
 	EXTRN _KB_YES_NO_Q:PROC                          ; 
@@ -140,10 +148,28 @@ TF_Continue:
     call _UI_SET_STATUS
 	
 	mov dl,CurrentDriveIndex	
-	;call TF_READ_TEST
+	call TF_READ_TEST
 
-    call _UI_CLEAR_STATUS
-
+  	call _UI_CLEAR_STATUS    
+  	
+    cmp ReadTestStatus,0ffh             ; Check for error
+    je TF_ReadTestError
+    
+    cmp ReadTestStatus,01h              ; Check for user-aborted
+    je TF_Aborted
+                                                                           
+    lea si,FDTestSuccess                ; Otherwise assume success
+    call _UI_FD_READ_TEST_RESULT
+    jmp TF_NextDrive
+    
+TF_ReadTestError:                                     
+    lea si,FDTestFail
+    call _UI_FD_READ_TEST_RESULT
+    jmp TF_NextDrive
+        
+TF_Aborted:
+    lea si,FDTestAbort
+    call _UI_FD_READ_TEST_RESULT
 	jmp TF_NextDrive
 	
 TF_NoFloppyDrives:
@@ -154,6 +180,7 @@ TF_NoFloppyDrives:
 	jmp TF_Done
 
 TF_NextDrive:
+
 	inc CurrentDriveIndex
 	mov dl,CurrentDriveIndex
 	cmp dl,_DIO_NumberOfDisks
@@ -174,12 +201,15 @@ _TEST_FLOPPY ENDP
 ;   - SectorsToRead is a byte in the data segment to indicate the number of sectors to read
 ;	- CylindersToRead is a byte in the data segment to indicate the number of tracks/cylinders to read
 ; Output: 
-;	- None
+;	- ReadTestStatus will contain a byte wuth the decimal value
+;       - 0 if the test was successful
+;       - 1 if the test was incomplete (aborted)
+;       - 255 if the test ended in error
 ; Destroys:
 ;	- None
 ;----
 TF_READ_TEST PROC
-
+    mov ReadTestStatus,1               ; Default status is incomplete
 	mov ReadRetries,0                  ; Reset retries
 	
 	mov ch,0                           ; start cylinder
@@ -268,15 +298,13 @@ ChangeSide:
 	jmp ContinueReading
 	
 DoneWithError:
-
+    mov ReadTestStatus,0ffh
 	call PRINT_ERROR_CODE		; If it ended in error
 	
 	jmp	TF_RT_Done
 
 DoneReadingOk:
-
-	lea si,FloppyOKMsg			
-    call _UI_SET_STATUS
+    mov ReadTestStatus,0
     	
 TF_RT_Done:
 	ret

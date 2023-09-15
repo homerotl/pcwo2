@@ -19,11 +19,14 @@
 	_UI_Progress_FDT 			db 0            ; number from 0 to 10 indicating progress
 	PUBLIC _UI_Progress_FDT
 	
+	FDTestBaseRow               db 0
+	
 	DriveTypeNMediaMsg	        db 'Drive X              Media$' 
 	DriveReadTestMsg	        db 'Reading Test [          ] Track$' 
 	BlankStatusMsg              db '                         $'
 	ProgressChar                db '=$'
-	
+
+    		
 .CODE		
 	.8086
 JUMPS
@@ -37,6 +40,7 @@ JUMPS
 	PUBLIC _UI_ADD_FD_MEDIA_VALUE
 	PUBLIC _UI_PRINT_TRACK_NUM
 	PUBLIC _UI_DISPLAY_FD_PROGRESS
+    PUBLIC _UI_FD_READ_TEST_RESULT
 
 ;----
 ; _UI_SET_STATUS
@@ -80,16 +84,11 @@ _UI_DRIVE_TEST_TITLES PROC
     mov _SCRN_Attribute,LableStyle	   ; set style
     mov _SCRN_Position_X,03h           ; set the column 
                                        ; calculate the row
+    call FD_TEST_CALCULATE_BASE_ROW
+                                       ; calculate the row
     push ax                            ; save registers
-    push bx
-    xor ax,ax                          ; ax=0
-    mov al,_UI_Drive_Index
-    mov bl,03h
-    mul bl                             ; each drive takes 3 rows
-    add al,0ch                         ; add start row (12 = 0ch)
+    mov al,FDTestBaseRow
     mov _SCRN_Position_Y,al            
-    pop bx                             ; restore registers
-    pop ax                             
 	
 	lea si,DriveTypeNMediaMsg	
 	call _SCRN_PRINT_TEXT
@@ -98,6 +97,8 @@ _UI_DRIVE_TEST_TITLES PROC
 	lea si,DriveReadTestMsg	
 	call _SCRN_PRINT_TEXT
 	
+	pop ax                            
+
 	ret
 _UI_DRIVE_TEST_TITLES ENDP
 
@@ -114,16 +115,12 @@ _UI_ADD_FD_TYPE_VALUE PROC
     mov _SCRN_Attribute,DynInfoStyle   ; set style
     mov _SCRN_Position_X,0bh           ; set the column 
                                        ; calculate the row
+    call FD_TEST_CALCULATE_BASE_ROW
+                                       ; calculate the row
     push ax                            ; save registers
-    push bx
-    xor ax,ax                          ; ax=0
-    mov al,_UI_Drive_Index
-    mov bl,03h                         
-    mul bl                             ; each drive takes 3 rows
-    add al,0ch                         ; add start row (12 = 0ch)
+    mov al,FDTestBaseRow
     mov _SCRN_Position_Y,al            
 
-    pop bx                             ; restore registers
     pop ax                             
 	call _SCRN_PRINT_TEXT
 	ret
@@ -142,17 +139,13 @@ _UI_ADD_FD_MEDIA_VALUE PROC
     mov _SCRN_Attribute,DynInfoStyle   ; set style
     mov _SCRN_Position_X,1eh           ; set the column 
                                        ; calculate the row
+    call FD_TEST_CALCULATE_BASE_ROW
+                                       ; calculate the row
     push ax                            ; save registers
-    push bx
-    xor ax,ax                          ; ax=0
-    mov al,_UI_Drive_Index
-    mov bl,03h                         
-    mul bl                             ; each drive takes 3 rows
-    add al,0ch                         ; add start row (12 = 0ch)
+    mov al,FDTestBaseRow
     mov _SCRN_Position_Y,al            
 
-    pop bx                             ; restore registers
-    pop ax                             
+    pop ax                              
 	call _SCRN_PRINT_TEXT
 	ret
 _UI_ADD_FD_MEDIA_VALUE ENDP
@@ -169,18 +162,15 @@ _UI_ADD_FD_MEDIA_VALUE ENDP
 _UI_PRINT_TRACK_NUM PROC
     mov _SCRN_Attribute,DynInfoStyle   ; set style
     mov _SCRN_Position_X,23h           ; set the column 
+    
+    call FD_TEST_CALCULATE_BASE_ROW
                                        ; calculate the row
     push ax                            ; save registers
-    push bx
-    xor ax,ax                          ; ax=0
-    mov al,_UI_Drive_Index
-    mov bl,03h                         
-    mul bl                             ; each drive takes 3 rows
-    add al,0dh                         ; add start row (13 = 0dh)
+    mov al,FDTestBaseRow
+    inc al                             ; 2nd row    
     mov _SCRN_Position_Y,al            
 
-    pop bx                             ; restore registers
-    pop ax                             
+    pop ax                           ; restore registers
 	call _SCRN_PRINT_TEXT
 	ret
 _UI_PRINT_TRACK_NUM ENDP
@@ -204,33 +194,77 @@ _UI_DISPLAY_FD_PROGRESS PROC
     mov _SCRN_Attribute,DynInfoStyle   ; set style
     mov _SCRN_Position_X,11h           ; set the column 
                                        ; calculate the row
+
+    call FD_TEST_CALCULATE_BASE_ROW
+    
     push ax                            ; save registers
-    push bx
     push cx
     
-    xor ax,ax                          ; ax=0
-    mov al,_UI_Drive_Index
-    mov bl,03h                         
-    mul bl                             ; each drive takes 3 rows
-    add al,0dh                         ; add start row (13 = 0dh)
+    mov al,FDTestBaseRow
+    inc al                             ; 2nd row
     mov _SCRN_Position_Y,al            
     
-    xor cx,cx
+    xor cx,cx                          ; setup the counter
     mov cl,_UI_Progress_FDT
 
 repeat_print_prog_char:
-    call _SCRN_PRINT_TEXT
-    mov bl,_SCRN_Position_X
-    inc bl
-    mov _SCRN_Position_X,bl    
+    call _SCRN_PRINT_TEXT 
+    inc _SCRN_Position_X
     loop repeat_print_prog_char                 
     
     pop cx
-    pop bx
     pop ax
     
 ui_display_fd_prog_end:
 	ret
 _UI_DISPLAY_FD_PROGRESS ENDP
+
+
+;----
+; _UI_FD_READ_TEST_RESULT
+; Display drive test status message
+; Inputs: 
+;  - _UI_Drive_Index
+;  - si points to a string '$' terminated of 10 chars
+; Output: none
+; Destroys: none
+;----
+_UI_FD_READ_TEST_RESULT PROC
+    
+    call FD_TEST_CALCULATE_BASE_ROW
+    
+    push ax
+    mov _SCRN_Attribute,DynInfoStyle   ; set style
+    mov _SCRN_Position_X,11h           ; set the column 
+    inc FDTestBaseRow
+    mov al,FDTestBaseRow
+    mov _SCRN_Position_Y,al
+    call _SCRN_PRINT_TEXT 
+    pop ax
+	ret
+_UI_FD_READ_TEST_RESULT ENDP
+
+;----
+; FD_TEST_CALCULATE_BASE_ROW
+; Calculate the base row for the floppy drive test results
+; Inputs: 
+;  - _UI_Drive_Index
+; Output: FDTestBaseRow has the Y value for the base row
+; Destroys: none
+;----
+FD_TEST_CALCULATE_BASE_ROW PROC
+    push ax                            ; save registers
+    push bx
+    xor ax,ax                          ; ax=0
+    mov al,_UI_Drive_Index
+    mov bl,03h                         
+    mul bl                             ; each drive takes 3 rows
+    add al,0ch                         ; add start row (12 = 0dh)
+    mov FDTestBaseRow,al  
+    pop bx                             ; restore registers
+    pop ax  
+	ret
+FD_TEST_CALCULATE_BASE_ROW EndP
+
 
 END
