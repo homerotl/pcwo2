@@ -14,7 +14,9 @@
 	EXTRN _SCRN_SET_VIDEO_MODE:PROC		; From LIB/SCREEN.ASM
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
-		
+	EXTRN _SCRN_SAVE_SCR:PROC
+	EXTRN _SCRN_RESTORE_SCR:PROC
+
     PUBLIC _SCREEN_GEOMETRY_TEST
 
 ;----
@@ -28,13 +30,15 @@
 ;----
 _SCREEN_GEOMETRY_TEST PROC NEAR
 
+	call _SCRN_SAVE_SCR         ; save current screen
+	
 	push ax						; Save used registers
 	push bx
 	push cx
 	push dx
 	push di
 	push es
-	
+		
 	mov _SCRN_VideoMode,13h								
 	call _SCRN_SET_VIDEO_MODE   ; Set graphics mode 13h (Graphics, 320x200)
 	
@@ -89,16 +93,19 @@ DarwRightLastLine:
 	
     mov _SCRN_VideoMode,01h     ; Setup text mode 1 (40x25x16)				
 	call _SCRN_SET_VIDEO_MODE
+	
 	call _SCRN_DISABLE_CURSOR		 
 	call _SCRN_DISABLE_BLINKING_TEXT
-	
+		    
 	pop es						; Restore used registers
 	pop di
 	pop dx
 	pop cx
 	pop bx
 	pop ax
-	
+
+	call _SCRN_RESTORE_SCR	    ; restore screen
+			
 	ret
 _SCREEN_GEOMETRY_TEST ENDP
 

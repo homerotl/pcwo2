@@ -23,7 +23,7 @@
 .DATA
 	
 	; Text for the interactive mode
-    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.007 $'
+    WelcomeLbl					db 'PC Workout by Homero Trevino - v2.010$'
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
 	FPULbl						db 'FPU$' 	
@@ -43,6 +43,7 @@
 	FPU287Lbl					db '287          $'
 	FPU387Lbl					db '387          $'
 	FPUUnknownLbl				db 'Unknown      $'
+		
 
     ; Menu options
     MenuOp1Lbl                  db '[F2] Floppy Test  $'
@@ -121,9 +122,6 @@ m_interactive_loop:
     call DISPLAY_MENU							; Display menu
 
 	call _DISPATCHER                            ; Wait for KB input and act on it
-
-	;cmp ProgramExitSignal                      ; Check for exit signal
-	;jmp m_interactive_loop
 
 	call UI_TEARDOWN							; Return to 80 column text mode 
 	
@@ -235,7 +233,7 @@ UI_SETUP PROC
 	mov _SCRN_Position_Y,4
 	lea si,FPUBenchmarkLbl
 	call _SCRN_PRINT_TEXT	
-	
+
 	ret
 UI_SETUP ENDP
 

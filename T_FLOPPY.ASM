@@ -18,7 +18,7 @@ MAX_RETRIES EQU 4
 	
 	StatusEnumDrivesMsg	db 'Counting drives...$' 		
 	StatusDetDrTypeMsg  db 'Detect drive type...$' 
-	StatusDetMefTypeMsg db 'Detect media type...$' 
+	StatusDetMedTypeMsg db 'Detect media type...$' 
     StatusReadTestMsg   db 'Surface read test...$'
     
 	RetryMsgQ      		db 'Would you like to retry? (Y/N)$' 
@@ -26,7 +26,7 @@ MAX_RETRIES EQU 4
 	ReadingSec     		db 'Reading track: $'
     FloppyFailed   		db 'Floppy read test FAILED$'
     FloppyOKMsg    		db 'Floppy read test SUCCESS!$'
-    NoFloppyDrivesMsg	db 'No floppy drives detected. Skipping test$'
+    NoFloppyDrivesMsg	db 'No drives detected$'
     
 	DDT_0				db '5.25"-360KB$'
 	DDT_1				db '5.25"-1.2MB$'
@@ -40,25 +40,27 @@ MAX_RETRIES EQU 4
 	DMT_2				db '720KB$'
 	DMT_3				db '1.44MB$'
 	DMT_4				db '2.88MB$'
-	DMT_UK				db 'Unknown$'
+	DMT_UNKNOWN			db 'Unknown$'
+	DMT_EMPTY           db 'Empty$'
+	DMT_FATAL_ERROR     db 'Error$'
 	
 	FDTestSuccess       db 'Success!  $'
     FDTestFail          db 'Test Fail $'
     FDTestAbort         db 'Aborted   $'
     
     
-	EXTRN _VerboseEnableFlag:BYTE	; Global flags
+	EXTRN _VerboseEnableFlag:BYTE	 ; Global flags
 	EXTRN _AutoRunFlag:BYTE							
 
-	EXTRN _DIO_NumberOfDisks:BYTE	; From DISK_IO.ASM
+	EXTRN _DIO_NumberOfDisks:BYTE    ; From DISK_IO.ASM
 	EXTRN _DIO_DriveType:BYTE	
 	EXTRN _DIO_MediaType:BYTE	
   						
-  	EXTRN _UI_Drive_Index:BYTE    ; From UI.ASM
+  	EXTRN _UI_Drive_Index:BYTE       ; From UI.ASM
     EXTRN _UI_Progress_FDT:BYTE
+    EXTRN _UI_Enter_Esc_Diag_Resp:BYTE
 
-	EXTRN _NumToAsciiB:BYTE			; From LIB/STRINGS.ASM
-	EXTRN _CRLF:BYTE
+	EXTRN _NumToAsciiB:BYTE			 ; From LIB/STRINGS.ASM
 
 .CODE
     .8086
@@ -82,8 +84,9 @@ JUMPS
     EXTRN _UI_PRINT_TRACK_NUM:PROC
     EXTRN _UI_DISPLAY_FD_PROGRESS:PROC
     EXTRN _UI_FD_READ_TEST_RESULT:PROC
-
-        
+    EXTRN _UI_PROMPT_INSERT_MEDIA:PROC
+    EXTRN _UI_CLEAR_PROMPT:PROC
+    
 	EXTRN _KB_WAIT_ANY_KEY:PROC                      ; From LIB/KB.ASM
 	EXTRN _KB_YES_NO_Q:PROC                          ; 
 	
@@ -108,12 +111,18 @@ _TEST_FLOPPY PROC
 	cmp _DIO_NumberOfDisks,0			; If its 0 we are done
 	je TF_NoFloppyDrives
 	
+	cmp _DIO_NumberOfDisks,0feh			; If error we are done
+	je TF_NoFloppyDrives
+	
+	cmp _DIO_NumberOfDisks,0ffh			; If error we are done
+	je TF_NoFloppyDrives
+	
 	mov CurrentDriveIndex,0				; start with drive 0
 	
 TF_Continue:
 
 	mov dl,CurrentDriveIndex	
-	mov _UI_Drive_Index,dl            ; copy it here so the screen lib knows which row is this
+	mov _UI_Drive_Index,dl            ; copy it here so the UI lib knows which row is this
 	
 	lea si,StatusDetDrTypeMsg		
     call _UI_SET_STATUS
@@ -128,10 +137,12 @@ TF_Continue:
           
 	call DISPLAY_DRIVE_TYPE			
 	
-	cmp _DIO_DriveType,0ffh				; Check if we know the drive type
+	cmp _DIO_DriveType,0ffh				; If drive type was error, skip to next drive
 	je TF_NextDrive
 
-	lea si,StatusDetMefTypeMsg 		
+TF_Retry_Media_Det:
+
+	lea si,StatusDetMedTypeMsg 		
     call _UI_SET_STATUS
     
 	mov dl,CurrentDriveIndex
@@ -139,13 +150,19 @@ TF_Continue:
 	
 	call _UI_CLEAR_STATUS
 	    
-	cmp _DIO_MediaType,0ffh				; Check for error
-	je TF_NextDrive
-
 	call DISPLAY_MEDIA_TYPE
-		
-	lea si,StatusReadTestMsg		
-    call _UI_SET_STATUS
+
+	cmp _DIO_MediaType,0fch				; If unknown, skip prompt
+	je TF_NextDrive	
+
+	cmp _DIO_MediaType,0feh				; If user retriable, prompt for 
+	je TF_PromptMediaInsert	            ; media insert
+	
+	cmp _DIO_MediaType,0ffh				; If fatal error, skip prompt
+	je TF_NextDrive	
+
+	lea si,StatusReadTestMsg		    ; If we know the media, and
+    call _UI_SET_STATUS                 ; things look ok, just do the read test
 	
 	mov dl,CurrentDriveIndex	
 	call TF_READ_TEST
@@ -161,7 +178,14 @@ TF_Continue:
     lea si,FDTestSuccess                ; Otherwise assume success
     call _UI_FD_READ_TEST_RESULT
     jmp TF_NextDrive
+ 
+TF_PromptMediaInsert:
+    call _UI_PROMPT_INSERT_MEDIA        ; 0=ESC, 1 = ENTER               
+    cmp _UI_Enter_Esc_Diag_Resp,1       ; If ENTER then try again
+    je TF_Retry_Media_Det
     
+    jmp TF_NextDrive                    ; Else, go to next drive
+   
 TF_ReadTestError:                                     
     lea si,FDTestFail
     call _UI_FD_READ_TEST_RESULT
@@ -406,7 +430,13 @@ DISPLAY_MEDIA_TYPE PROC
 	cmp _DIO_MediaType,4
 	je FT_DMT_2880K
 	
-	mov dx,OFFSET DMT_UK
+	cmp _DIO_MediaType,0fch         ; Unknown media type
+	je FT_DMT_UNKNOWN
+
+	cmp _DIO_MediaType,0feh         ; User retriable error
+	je FT_DMT_EMPTY
+
+	lea si,DMT_FATAL_ERROR
 	jmp FT_DMT_End
 
 FT_DMT_360K:
@@ -439,6 +469,13 @@ FT_DMT_2880K:
 	mov CylindersToRead,50h			; 80 (50h) cylinders/tracks
 	jmp FT_DMT_End
 
+FT_DMT_UNKNOWN:
+    lea si,DMT_UNKNOWN
+	jmp FT_DMT_End
+
+FT_DMT_EMPTY:
+    lea si,DMT_EMPTY
+ 
 FT_DMT_End:
 	call _UI_ADD_FD_MEDIA_VALUE
 	ret

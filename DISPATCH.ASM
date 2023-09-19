@@ -3,26 +3,11 @@
 ; correct procedure
 ; Author: Homero Trevino <homerotl@gmail.com>
 
-	StatusStyle            equ 40h ; Black text over red background
-
 	ExitKeyScanCode        equ 44h ; F10
 		
 .MODEL small
 		
-.DATA
-	
-	; Status texts
-    PCSpeakerMsg    db 'Playing Sound...$'
-    BlankStatusMsg  db '                $'
-
-    StatusLbl1  db 'Option 2$'
-    StatusLbl2  db 'Option 3$'
-
-	
-	EXTRN _SCRN_Attribute:BYTE             ; From LIB/SCREEN.ASM 
-	EXTRN _SCRN_Position_X:BYTE
-	EXTRN _SCRN_Position_Y:BYTE
-	
+.DATA	
     
     ; On this table we have the valid key inputs and the address
     ; where the corresponding procedure should be called if pressed
@@ -33,26 +18,20 @@
     ;       db      0   ; End of table
     dispatch_table LABEL BYTE
         db  60                              ; F2
-        dw  OFFSET _TEXT:_FLOPPY_TEST
+        dw  OFFSET _TEXT:_TEST_FLOPPY
         db  61                              ; F3
-        dw  OFFSET _TEXT:_VIDEO_TEST
+        dw  OFFSET _TEXT:_SCREEN_GEOMETRY_TEST
         db  62                              ; F4
-        dw  OFFSET _TEXT:_PC_SPEAKER_TEST
+        dw  OFFSET _TEXT:_TEST_PC_SPEAKER
         db  0                               ; End of table
 
 .CODE
 	.8086
 
 	EXTRN _UI_SET_STATUS:PROC              ; From UI.ASM 
-
 	EXTRN _TEST_PC_SPEAKER:PROC            ; From T_SPEAKER.ASM 
 	EXTRN _SCREEN_GEOMETRY_TEST:PROC       ; From T_SCREEN.ASM 
     EXTRN _TEST_FLOPPY:PROC                ; From T_FLOPPY.ASM
-
-		
-	EXTRN _SCRN_SAVE_SCR:PROC              ; From LIB/SCREEN.ASM
-	EXTRN _SCRN_RESTORE_SCR:PROC    
-		   
     EXTRN _KB_READ_KEY:PROC                ; From LIB/KB.ASM
  
     PUBLIC _DISPATCHER
@@ -66,18 +45,19 @@ dis_loop:
     call _KB_READ_KEY                  ; Read a character into ax
     or ah,ah                           ; ax = -1 if no charcter read, 1 for
                                        ; extended code
-    js dis_no_chars_read
+    js dis_loop
     jnz dis_special_key
     jmp dis_loop
    
 dis_special_key:
+    
     cmp al,ExitKeyScanCode             ; Check for exit key
     je dis_end_dispatcher    
-
     lea bx,dispatch_table              ; Lookup code on the table    
+    
 dis_special_loop:
     cmp byte ptr [bx],0                ; End of table?
-    je dis_not_in_table                ; Key was not in table
+    je dis_loop                        ; Key was not in table
     cmp al,[bx]
     je dis_dispatch
     add bx,3
@@ -88,14 +68,6 @@ dis_dispatch:
     call word ptr[bx]                  ; call procedure
     jmp dis_loop                       ; wait for another key
 
-dis_not_in_table:
-    jmp dis_loop
-
-dis_no_chars_read:
-    ;lea dx,editor_prompt
-    ;call WRITE_PROMPT_LINE
-    jmp dis_loop
-    
 dis_end_dispatcher:
     pop dx
     pop bx
@@ -103,35 +75,5 @@ dis_end_dispatcher:
     ret
 	
 _DISPATCHER ENDP
-
-
-; Dummy proc
-_FLOPPY_TEST PROC
-    call _TEST_FLOPPY
-    ret
-_FLOPPY_TEST ENDP
-
-; Dummy proc
-_VIDEO_TEST PROC
-	
-	call _SCRN_SAVE_SCR                    ; save current screen
-	call _SCREEN_GEOMETRY_TEST             ; execute the test and wait for a key
-    call _SCRN_RESTORE_SCR	               ; restore screen
-    	
-	ret
-_VIDEO_TEST ENDP
-
-; Dummy proc
-_PC_SPEAKER_TEST PROC
-
-	lea si,PCSpeakerMsg		
-    call _UI_SET_STATUS
-	
-	call _TEST_PC_SPEAKER
-	
-    call _UI_SET_STATUS
-	
-	ret
-_PC_SPEAKER_TEST EndP
 
 END

@@ -7,6 +7,12 @@
 	DynInfoStyle           equ 40h ; Black text over red background
 	StatusStyle            equ 40h ; Black text over red background
 
+    STATUS_COL EQU 0ch  ; 12
+    STATUS_ROW EQU 16h  ; 22	
+
+    PROMPT_COL EQU 0ch  ; 12
+    PROMPT_ROW EQU 17h  ; 23
+
 .DATA
 	
 	EXTRN _SCRN_Attribute:BYTE      ; From LIB/SCREEN.ASM
@@ -19,11 +25,20 @@
 	_UI_Progress_FDT 			db 0            ; number from 0 to 10 indicating progress
 	PUBLIC _UI_Progress_FDT
 	
-	FDTestBaseRow               db 0
+	_UI_Enter_Esc_Diag_Resp     db 0            ; Response to ENTER or ESC dialog
+	PUBLIC _UI_Enter_Esc_Diag_Resp              ; 0=ESC, 1 = ENTER 
 	
+	FDTestBaseRow               db 0
+
 	DriveTypeNMediaMsg	        db 'Drive X              Media$' 
 	DriveReadTestMsg	        db 'Reading Test [          ] Track$' 
-	BlankStatusMsg              db '                         $'
+
+	BlankStatusMsg              db '                           $'
+
+    MediaNotPresentMsg          db 'Media not present$'
+    RetrySkipMsg                db '[ENTER] retry  [ESC] skip  $'
+
+		
 	ProgressChar                db '=$'
 
     		
@@ -31,16 +46,21 @@
 	.8086
 JUMPS
 
-	EXTRN _SCRN_PRINT_TEXT:PROC                      ; From LIB/SCREEN.ASM
+	EXTRN _SCRN_PRINT_TEXT:PROC            ; From LIB/SCREEN.ASM
+    EXTRN _KB_ENTER_ESC_Q:PROC             ; From LIB/KB.ASM
 
 	PUBLIC _UI_SET_STATUS
+	PUBLIC _UI_SET_PROMPT
 	PUBLIC _UI_CLEAR_STATUS
+    PUBLIC _UI_CLEAR_PROMPT
+    	
 	PUBLIC _UI_DRIVE_TEST_TITLES
 	PUBLIC _UI_ADD_FD_TYPE_VALUE
 	PUBLIC _UI_ADD_FD_MEDIA_VALUE
 	PUBLIC _UI_PRINT_TRACK_NUM
 	PUBLIC _UI_DISPLAY_FD_PROGRESS
     PUBLIC _UI_FD_READ_TEST_RESULT
+    PUBLIC _UI_PROMPT_INSERT_MEDIA
 
 ;----
 ; _UI_SET_STATUS
@@ -51,11 +71,27 @@ JUMPS
 ;----
 _UI_SET_STATUS PROC
 	mov _SCRN_Attribute,StatusStyle	
-	mov _SCRN_Position_X,0eh           ; 14
-	mov _SCRN_Position_Y,17h           ; 23
+	mov _SCRN_Position_X,STATUS_COL
+	mov _SCRN_Position_Y,STATUS_ROW
 	call _SCRN_PRINT_TEXT
 	ret
 _UI_SET_STATUS ENDP
+
+;----
+; _UI_SET_PROMPT
+; Display text in the prompt area
+; Inputs: si points to the text to display. Must be $ terminated.
+; Output: none
+; Destroys: none
+;----
+_UI_SET_PROMPT PROC
+	mov _SCRN_Attribute,StatusStyle	
+	mov _SCRN_Position_X,PROMPT_COL
+	mov _SCRN_Position_Y,PROMPT_ROW
+	call _SCRN_PRINT_TEXT
+	ret
+_UI_SET_PROMPT ENDP
+
 
 ;----
 ; _UI_CLEAR_STATUS
@@ -67,11 +103,27 @@ _UI_SET_STATUS ENDP
 _UI_CLEAR_STATUS PROC
     lea si,BlankStatusMsg
 	mov _SCRN_Attribute,StatusStyle	
-	mov _SCRN_Position_X,0eh           ; 14
-	mov _SCRN_Position_Y,17h           ; 23
+	mov _SCRN_Position_X,STATUS_COL
+	mov _SCRN_Position_Y,STATUS_ROW
 	call _SCRN_PRINT_TEXT
 	ret
 _UI_CLEAR_STATUS ENDP
+
+;----
+; _UI_CLEAR_PROMPT
+; Clear the prompt text label
+; Inputs: none
+; Output: none
+; Destroys: none
+;----
+_UI_CLEAR_PROMPT PROC
+    lea si,BlankStatusMsg
+	mov _SCRN_Attribute,StatusStyle	
+	mov _SCRN_Position_X,PROMPT_COL
+	mov _SCRN_Position_Y,PROMPT_ROW
+	call _SCRN_PRINT_TEXT
+	ret
+_UI_CLEAR_PROMPT ENDP
 
 ;----
 ; _UI_DRIVE_TEST_TITLES
@@ -264,7 +316,56 @@ FD_TEST_CALCULATE_BASE_ROW PROC
     pop bx                             ; restore registers
     pop ax  
 	ret
-FD_TEST_CALCULATE_BASE_ROW EndP
+FD_TEST_CALCULATE_BASE_ROW ENDP
 
+;----
+; _UI_PROMPT_INSERT_MEDIA
+; Display a user prompt to select between two options
+; Inputs:
+; Output: _UI_Enter_Esc_Diag_Resp = 0 if ESC, = 1 if ENTER
+; Destroys: none
+;----
+_UI_PROMPT_INSERT_MEDIA PROC
+    
+    push ax
+    
+    call _UI_CLEAR_PROMPT
+    call _UI_CLEAR_STATUS
+
+    lea si,MediaNotPresentMsg
+    call _UI_SET_STATUS
+    
+    lea si,RetrySkipMsg
+    call _UI_SET_PROMPT
+ 
+ kb_pimp_retry:
+   
+    call _KB_ENTER_ESC_Q
+
+    cmp al,00h                 ; is it ESC?
+    je kb_pimp_esc
+    
+    cmp al,01h                 ; is it ENTER?
+    je kb_pimp_enter
+    
+    jmp kb_pimp_retry
+
+kb_pimp_esc:
+    mov _UI_Enter_Esc_Diag_Resp,0
+    jmp kb_pimp_end
+
+kb_pimp_enter:
+    mov _UI_Enter_Esc_Diag_Resp,1
+    jmp kb_pimp_end
+       
+kb_pimp_end:
+    
+    call _UI_CLEAR_PROMPT
+    call _UI_CLEAR_STATUS
+    
+    pop ax
+    
+	ret
+_UI_PROMPT_INSERT_MEDIA ENDP
 
 END

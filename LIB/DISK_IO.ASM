@@ -4,8 +4,11 @@
 
 .MODEL small
 
+MAX_RETRIES EQU 4	
+
 .DATA      
-	DIO_DiskReadBuf				db 9216 dup(0)	; 
+    DIO_RetryCount              db 0
+	DIO_DiskReadBuf				db 9216 dup(?) ; buffer to read from disk, uninitialized
 	
 	public _DIO_NumberOfDisks
 	_DIO_NumberOfDisks 			db 0
@@ -16,6 +19,7 @@
 	DIO_DriveType_3_5_720KB		db 2
 	DIO_DriveType_3_5_1440KB	db 3
 	DIO_DriveType_3_5_2880KB	db 4
+	DIO_DriveType_ERROR 		db 0feh	
 	DIO_DriveType_UNKNOWN 		db 0ffh
 	
 	public _DIO_DriveType
@@ -196,6 +200,8 @@ _DIO_DETECT_FD_TYPE PROC
 	mov ah,08h						; Function 08h int 13h - Get drive params
 	int 13h
 	
+	jc DIO_DFDT_ERROR
+	
 	cmp bl,01h						; Check type
 	je DIO_DFDT_01
 
@@ -213,6 +219,12 @@ _DIO_DETECT_FD_TYPE PROC
 	
 	jmp DIO_DFDT_UNKNOWN
 
+DIO_DFDT_ERROR:
+    mov ah,DIO_DriveType_UNKNOWN
+	mov _DIO_DriveType,ah
+	                                ; TODO: Maybe set the error on a global variable?
+	jmp DIO_DFDT_END
+	
 DIO_DFDT_01:						; Type 1 5.25" 360KB
 	mov ah,DIO_DriveType_5_25_360KB
 	mov _DIO_DriveType,ah
@@ -226,8 +238,8 @@ DIO_DFDT_02:						; Type 2, depends on cylinders
 	
 	jmp DIO_DFDT_UNKNOWN
 
-DIO_DFDT_03:						; Type 3, need more examples
-	jmp DIO_DFDT_UNKNOWN
+DIO_DFDT_03:						; Type 3, need more examples, but so far 720K
+	jmp DIO_DFDT_04_SEC09
 
 DIO_DFDT_04:						; Type 4, depends on sectors
 	cmp cl,09h
@@ -241,6 +253,8 @@ DIO_DFDT_05:						; Type 5
 	mov ah,DIO_DriveType_3_5_2880KB
 	mov _DIO_DriveType,ah
 	jmp DIO_DFDT_END
+
+; 
 
 DIO_DFDT_02_CYL_27H:
 	mov ah,DIO_DriveType_5_25_360KB
@@ -288,6 +302,10 @@ _DIO_DETECT_MEDIA_TYPE PROC
 	push ax
 	push bx
 	push cx
+	                            ; set max retries
+	mov DIO_RetryCount,MAX_RETRIES
+
+DIO_DMT_Retry:
 								; Read boot sector
 	mov ch,0					; track 0
 	mov dh,0					; side/head 0
@@ -295,6 +313,25 @@ _DIO_DETECT_MEDIA_TYPE PROC
 								; data will be at DIO_DiskReadBuf
 	call _DIO_READ_SECTOR
 
+    jnc DIO_DMT_Continue        ; if successful, continue
+    
+    cmp DIO_RetryCount,0
+    je DIO_DMT_NO_MORE_RETRIES
+    
+    call _DIO_INT13H_ERROR_IS_SYS_RETRIABLE
+    cmp al,01h
+    je DIO_DMT_Setup_Retry
+    
+    call _DIO_INT13H_ERROR_IS_USER_RETRIABLE
+    cmp al,01h
+    je DIO_DMT_USER_RET_ERROR
+    
+    jmp DIO_DMT_FATAL_ERROR  
+    
+DIO_DMT_Setup_Retry:
+    dec DIO_RetryCount
+    jmp DIO_DMT_Retry
+    
 DIO_DMT_Continue:
 	
 	lea di,DIO_DiskReadBuf		; align di with the read buffer
@@ -316,6 +353,13 @@ DIO_DMT_Continue:
 	je DIO_DMT_2880KB
 	
 	jmp DIO_DMT_UNKNOWN
+
+DIO_DMT_NO_MORE_RETRIES:
+    call _DIO_INT13H_ERROR_IS_USER_RETRIABLE
+    cmp al,01h
+    je DIO_DMT_USER_RET_ERROR
+    
+    jmp DIO_DMT_FATAL_ERROR  
 
 DIO_DMT_360KB:
 	mov al,DIO_MediaType_360K
@@ -345,7 +389,17 @@ DIO_DMT_2880KB:
 DIO_DMT_UNKNOWN:	
 	mov al,DIO_MediaType_UNKNOWN
 	mov _DIO_MediaType,al		
+	jmp DIO_DMT_End
 	
+DIO_DMT_USER_RET_ERROR:	
+	mov al,DIO_MediaType_USR_RET_ERROR
+	mov _DIO_MediaType,al		
+	jmp DIO_DMT_End
+
+DIO_DMT_FATAL_ERROR:	
+	mov al,DIO_MediaType_FATAL_ERROR
+	mov _DIO_MediaType,al	
+
 DIO_DMT_End:
 	pop cx
 	pop bx

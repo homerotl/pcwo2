@@ -10,6 +10,8 @@
 	PUBLIC _KB_YES_NO_Q
 	PUBLIC _KB_WAIT_ANY_KEY
 	PUBLIC _KB_READ_KEY
+	PUBLIC _KB_ENTER_ESC_Q
+	
 ;----
 ; _KB_YES_NO_Q 
 ; Wait for a Y/N answer (case insensitive)
@@ -90,5 +92,42 @@ rk_extended_code:
     mov ah,1
     jmp rk_done_reading
 _KB_READ_KEY ENDP
+
+;----
+; _KB_ENTER_ESC_Q 
+; Wait for an ESC or ENTER response
+; Inputs:
+; 	- None
+; Output: 
+;	- al 0=ESC, 1 = ENTER  
+; Destroys: AX
+;----
+_KB_ENTER_ESC_Q PROC
+kb_enter_esc_loop:
+    call _KB_READ_KEY
+    or ah,ah                           ; ax = -1 if no charcter read, 1 for
+                                       ; extended code
+    js kb_enter_esc_loop
+    jnz kb_enter_esc_loop
+
+    cmp al,0dh                         ; is it Enter?
+    je kb_enter_esc_enter
+    
+    cmp al,1bh                         ; is it Esc?
+    je kb_enter_esc_esc
+
+    jmp kb_enter_esc_loop
+
+kb_enter_esc_enter:
+    mov al,01h
+    jmp kb_enter_esc_end
+    
+kb_enter_esc_esc:
+    mov al,00h
+
+kb_enter_esc_end:
+    ret   
+_KB_ENTER_ESC_Q ENDP
+
 
 END

@@ -5,7 +5,7 @@
 	
 .DATA
     
-    SAVE_SCR_BUFF               db 2000 dup(0)  ; Buffer to save the screen
+    SAVE_SCR_BUFF               db 2000 dup('z')  ; Buffer to save the screen, uninitialized
 
 	_SCRN_VideoMode 			db 01h			; Public value for the video mode
 	PUBLIC _SCRN_VideoMode
@@ -55,12 +55,16 @@ _SCRN_SET_VIDEO_MODE ENDP
 ; For text mode 1 (40x25) set the attribute c
 ; Inputs: none
 ; Output: none
-; Destroys: es,di
+; Destroys: none
 ;----
 _SCRN_SET_BACKGROUND PROC
+	
 	push ax						; Save registers
 	push bx
 	push cx
+	push es
+	push di	
+	
 	mov ax,0b800h				; Text mode memory starts at 0b800h
 	mov es,ax					; Align es
 	mov di,0					; start index di with 0
@@ -71,6 +75,9 @@ fill_screen:
 	mov es:[di],bx
 	add di,2
 	loop fill_screen
+	
+	pop di
+	pop es
 	pop cx
 	pop bx
 	pop ax
@@ -123,12 +130,14 @@ _SCRN_DISABLE_BLINKING_TEXT ENDP
 ; 	_SCRN_Position_X - horizontal index where text will be displayed (byte)
 ; 	_SCRN_Position_Y - vertical index where text will be displated (byte)
 ; Output: none
-; Destroys: ES
+; Destroys: none
 ;----
 _SCRN_PRINT_TEXT PROC
 	push ax						; Save registers
 	push cx
+	push di
 	push si
+	push es
 	
 	mov ax,0b800h				; Text mode memory starts at 0b800h
 	mov es,ax					; Align ES
@@ -156,7 +165,9 @@ pt_loop:
 	jmp pt_loop
 	
 pt_end:
+    pop es
     pop si
+    pop di
     pop cx
 	pop ax                      ; Restore registers
 	ret
@@ -167,38 +178,34 @@ _SCRN_PRINT_TEXT ENDP
 ; Save the current content of the screen on the buffer SAVE_SCR_BUFF
 ; Inputs: none
 ; Output: none
-; Destroys: none
+; Destroys: si,di
 ;----
 _SCRN_SAVE_SCR PROC
-    push ax                     ; Save registers we are going to use
-    push cx
-    push di                     
-    push si
-    mov ax,es                
-	push ax
-	mov ax,ds
-	push ax
-	mov di,0                   ; start indexes at 0
+    
+                               ; Save registers we are going to use    
+    push cx               
+    push es
+
+	                           ; start indexes at 0
 	mov si,0
     
-    mov ax,0b800h
-    mov ds,ax                  ; align DS with start of text video segment
-    lea ax,SAVE_SCR_BUFF       ; align ES with the save screen buffer
-    mov es,ax                  
+    mov cx,ds                  ; copy Data segment (DS) to ES
+    mov es,cx
+    
+    mov cx,0b800h
+    mov ds,cx                  ; align DS with start of text video segment
+    mov di,OFFSET SAVE_SCR_BUFF ; align ES with the save screen buffer               
     
     cld                        ; clear direction flag
-	mov cx,07f0h               ; set counter, 40x2x25 = 2000d = 07f0h 
-	rep                        ; repeat the next string operation CX times
-	movsb                      ; move a byte from DS:SI to ES:DI
+	mov cx,07d0h               ; set counter, 40x2x25 = 2000 = 07d0h 
+	rep movsb                  ; repeat: move a byte from DS:SI to ES:DI, CX times
 	
-	pop ax                     ; Restore used registers
-	mov ds,ax
-	pop ax
-	mov es,ax
-	pop si
-	pop di
+    mov cx,es                  ; restore Data Segment
+    mov ds,cx    
+	                           ; Restore registers
+	pop es
 	pop cx
-	pop ax
+
 	ret
 _SCRN_SAVE_SCR ENDP
 
@@ -208,38 +215,29 @@ _SCRN_SAVE_SCR ENDP
 ; Restore screen with the content saved in SAVE_SCR_BUFF
 ; Inputs: none
 ; Output: none
-; Destroys: none
+; Destroys: si,di
 ;----
 _SCRN_RESTORE_SCR PROC
-    push ax                     ; Save registers we are going to use
+
+                               ; Save registers we are going to use    
     push cx
-    push di                     
-    push si
-    mov ax,es                
-	push ax
-	mov ax,ds
-	push ax
-	mov di,0                   ; start indexes at 0
-	mov si,0
-    
-    lea ax,SAVE_SCR_BUFF
-    mov ds,ax                  ; align DS with the save screen buffer
-    mov ax,0b800h              ; align ES with start of text video segment
-    mov es,ax                  
+    push es
+                               ; start indexes at 0
+	mov di,0                   
+	    
+    mov si,OFFSET SAVE_SCR_BUFF
+
+    mov cx,0b800h              ; align ES with start of text video segment
+    mov es,cx                  
     
     cld                        ; clear direction flag
-	mov cx,07f0h               ; set counter, 40x2x25 = 2000d = 07f0h 
-	rep                        ; repeat the next string operation CX times
-	movsb                      ; move a byte from DS:SI to ES:DI
-	
-	pop ax                     ; Restore used registers
-	mov ds,ax
-	pop ax
-	mov es,ax
-	pop si
-	pop di
+	mov cx,07d0h               ; set counter, 40x2x25 = 2000 = 07d0h 
+	rep movsb                  ; repeat: move a byte from DS:SI to ES:DI, CX times
+	                           
+	                           ; Restore registers
+	pop es
 	pop cx
-	pop ax
+
 	ret
 _SCRN_RESTORE_SCR ENDP
 
