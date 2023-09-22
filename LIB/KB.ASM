@@ -6,12 +6,8 @@
 
 .CODE
 	.8086
-	
-	PUBLIC _KB_YES_NO_Q
-	PUBLIC _KB_WAIT_ANY_KEY
-	PUBLIC _KB_READ_KEY
-	PUBLIC _KB_ENTER_ESC_Q
-	
+	JUMPS
+
 ;----
 ; _KB_YES_NO_Q 
 ; Wait for a Y/N answer (case insensitive)
@@ -21,6 +17,7 @@
 ;	- al = 1 if YES, 0 if NO. 
 ; Destroys: AX
 ;----
+PUBLIC _KB_YES_NO_Q
 _KB_YES_NO_Q PROC					
 	
 YNAskAgain:
@@ -58,6 +55,7 @@ _KB_YES_NO_Q ENDP
 ;	- None
 ; Destroys: None
 ;----
+PUBLIC _KB_WAIT_ANY_KEY
 _KB_WAIT_ANY_KEY PROC
 
 	push ax
@@ -67,7 +65,6 @@ _KB_WAIT_ANY_KEY PROC
 
 	ret
 _KB_WAIT_ANY_KEY ENDP
-
 
 ;----
 ; _KB_READ_KEY
@@ -79,6 +76,7 @@ _KB_WAIT_ANY_KEY ENDP
 ;   - ah: 0 if read is ASCII, 1 if read special key
 ; Destroys: ax
 ;----
+PUBLIC _KB_READ_KEY
 _KB_READ_KEY PROC
     xor ah,ah
     int 16h
@@ -102,6 +100,7 @@ _KB_READ_KEY ENDP
 ;	- al 0=ESC, 1 = ENTER  
 ; Destroys: AX
 ;----
+PUBLIC _KB_ENTER_ESC_Q
 _KB_ENTER_ESC_Q PROC
 kb_enter_esc_loop:
     call _KB_READ_KEY

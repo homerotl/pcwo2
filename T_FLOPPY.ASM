@@ -1,31 +1,27 @@
 ; T_FLOPPY.ASM
 ; Source for the Floppy drive tests
 ; Author: Homero Trevino <homerotl@gmail.com>
-;
 .MODEL small
 
-MAX_RETRIES EQU 4	
+	MAX_RETRIES EQU 4	
 	
 .DATA
 
-	ReadRetries    		db 0
-	CurrentDriveIndex 	db 0
-
-	SectorsToRead		db 0
-	CylindersToRead		db 0
-	
-	ReadTestStatus		db 0
+	EXTRN _VerboseEnableFlag:BYTE	 ; Global flags
+	EXTRN _AutoRunFlag:BYTE							
+	EXTRN _DIO_NumberOfDisks:BYTE    ; From DISK_IO.ASM
+	EXTRN _DIO_DriveType:BYTE	
+	EXTRN _DIO_MediaType:BYTE			
+  	EXTRN _UI_Drive_Index:BYTE       ; From UI.ASM
+    EXTRN _UI_Progress_FDT:BYTE
+    EXTRN _UI_Enter_Esc_Diag_Resp:BYTE
+	EXTRN _NumToAsciiB:BYTE			 ; From LIB/STRINGS.ASM
 	
 	StatusEnumDrivesMsg	db 'Counting drives...$' 		
 	StatusDetDrTypeMsg  db 'Detect drive type...$' 
 	StatusDetMedTypeMsg db 'Detect media type...$' 
     StatusReadTestMsg   db 'Surface read test...$'
-    
-	RetryMsgQ      		db 'Would you like to retry? (Y/N)$' 
-	ErrorMessage   		db 'Error reading disk: $' 
-	ReadingSec     		db 'Reading track: $'
-    FloppyFailed   		db 'Floppy read test FAILED$'
-    FloppyOKMsg    		db 'Floppy read test SUCCESS!$'
+	RetryMsgQ      		db 'Would you like to retry? (Y/N)$'
     NoFloppyDrivesMsg	db 'No drives detected$'
     
 	DDT_0				db '5.25"-360KB$'
@@ -48,23 +44,16 @@ MAX_RETRIES EQU 4
     FDTestFail          db 'Test Fail $'
     FDTestAbort         db 'Aborted   $'
     
-    
-	EXTRN _VerboseEnableFlag:BYTE	 ; Global flags
-	EXTRN _AutoRunFlag:BYTE							
+    ReadRetries    		db 0
+	CurrentDriveIndex 	db 0
+	SectorsToRead		db 0
+	CylindersToRead		db 0
+	ReadTestStatus		db 0
 
-	EXTRN _DIO_NumberOfDisks:BYTE    ; From DISK_IO.ASM
-	EXTRN _DIO_DriveType:BYTE	
-	EXTRN _DIO_MediaType:BYTE	
-  						
-  	EXTRN _UI_Drive_Index:BYTE       ; From UI.ASM
-    EXTRN _UI_Progress_FDT:BYTE
-    EXTRN _UI_Enter_Esc_Diag_Resp:BYTE
-
-	EXTRN _NumToAsciiB:BYTE			 ; From LIB/STRINGS.ASM
 
 .CODE
     .8086
-JUMPS
+	JUMPS
 
 	EXTRN _TOSTRING:PROC				 	         ; From LIB/STRINGS.ASM	
 	EXTRN _STR_PROGRESS_CALC:PROC
@@ -75,7 +64,6 @@ JUMPS
 	EXTRN _DIO_GET_NUMBER_OF_FD:PROC	
 	EXTRN _DIO_DETECT_FD_TYPE:PROC
 	EXTRN _DIO_DETECT_MEDIA_TYPE:PROC
-	
 	EXTRN _UI_SET_STATUS:PROC                        ; From UI.ASM
 	EXTRN _UI_DRIVE_TEST_TITLES:PROC
 	EXTRN _UI_ADD_FD_TYPE_VALUE:PROC
@@ -86,11 +74,7 @@ JUMPS
     EXTRN _UI_FD_READ_TEST_RESULT:PROC
     EXTRN _UI_PROMPT_INSERT_MEDIA:PROC
     EXTRN _UI_CLEAR_PROMPT:PROC
-    
-	EXTRN _KB_WAIT_ANY_KEY:PROC                      ; From LIB/KB.ASM
-	EXTRN _KB_YES_NO_Q:PROC                          ; 
-	
-	PUBLIC _TEST_FLOPPY
+	EXTRN _KB_YES_NO_Q:PROC							; From LIB/KB.ASM
 	
 ;----
 ; _TEST_FLOPPY 
@@ -99,6 +83,7 @@ JUMPS
 ; Output: None
 ; Destroys: All registers
 ;----
+PUBLIC _TEST_FLOPPY
 _TEST_FLOPPY PROC
 	
 	lea si,StatusEnumDrivesMsg			
@@ -122,7 +107,7 @@ _TEST_FLOPPY PROC
 TF_Continue:
 
 	mov dl,CurrentDriveIndex	
-	mov _UI_Drive_Index,dl            ; copy it here so the UI lib knows which row is this
+	mov _UI_Drive_Index,dl				; copy it here so the UI lib knows which row is this
 	
 	lea si,StatusDetDrTypeMsg		
     call _UI_SET_STATUS
@@ -131,8 +116,8 @@ TF_Continue:
 	call _DIO_DETECT_FD_TYPE
 
     call _UI_CLEAR_STATUS
-                                        ; TODO: Make this next part more dynamic to show
-                                        ; drive letter
+										; TODO: Make this next part more dynamic to show
+										; drive letter
     call _UI_DRIVE_TEST_TITLES
           
 	call DISPLAY_DRIVE_TYPE			
@@ -183,7 +168,6 @@ TF_PromptMediaInsert:
     call _UI_PROMPT_INSERT_MEDIA        ; 0=ESC, 1 = ENTER               
     cmp _UI_Enter_Esc_Diag_Resp,1       ; If ENTER then try again
     je TF_Retry_Media_Det
-    
     jmp TF_NextDrive                    ; Else, go to next drive
    
 TF_ReadTestError:                                     
@@ -197,19 +181,15 @@ TF_Aborted:
 	jmp TF_NextDrive
 	
 TF_NoFloppyDrives:
-		
 	lea si,NoFloppyDrivesMsg		
     call _UI_SET_STATUS
-    	
 	jmp TF_Done
 
 TF_NextDrive:
-
 	inc CurrentDriveIndex
 	mov dl,CurrentDriveIndex
 	cmp dl,_DIO_NumberOfDisks
 	je TF_Done
-
 	jmp TF_Continue
 
 TF_Done:

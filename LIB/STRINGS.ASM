@@ -5,15 +5,17 @@
 .MODEL small
 
 .DATA  
+
 	PUBLIC _NumToAsciiB
-	PUBLIC _CRLF
 	_NumToAsciiB  db '   $'
+	
+	PUBLIC _CRLF
 	_CRLF		 db 13,10,'$' 
+	
 .CODE
 	.8086
-	PUBLIC _TOSTRING
-    PUBLIC _STR_PROGRESS_CALC
-    
+	JUMPS
+	
 ;----
 ; TOSTRING 
 ; Converts the value in ah to a decimal string. Only 8-bit unsigned int.
@@ -23,6 +25,7 @@
 ;	- NumToAsciiB contains the decimal string.
 ; Destroys: None
 ;----
+PUBLIC _TOSTRING
 _TOSTRING PROC NEAR				; Assuming the value we want to convert is in ah
 
 	lea di,_NumToAsciiB 			; Point di to the buffer where we are going to write number		
@@ -71,6 +74,7 @@ _TOSTRING ENDP
 ;	- ah - is the corresponding value from 0 to 10
 ; Destroys: None
 ;----
+PUBLIC _STR_PROGRESS_CALC
 _STR_PROGRESS_CALC PROC
     push bx             ; save register we will use
     mov bl,ah           ; save max value
@@ -82,7 +86,5 @@ _STR_PROGRESS_CALC PROC
     pop bx              ; restore register used
 	ret
 _STR_PROGRESS_CALC ENDP
-
-
 
 END

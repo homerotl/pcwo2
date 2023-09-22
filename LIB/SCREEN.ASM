@@ -5,13 +5,10 @@
 	
 .DATA
     
-    SAVE_SCR_BUFF               db 2000 dup('z')  ; Buffer to save the screen, uninitialized
+    SAVE_SCR_BUFF               db 2000 dup(?)  ; Buffer to save the screen, uninitialized
 
 	_SCRN_VideoMode 			db 01h			; Public value for the video mode
 	PUBLIC _SCRN_VideoMode
-	
-	_SCRN_Character				db 20h
-	PUBLIC _SCRN_Character
 	
 	_SCRN_Attribute 			db 07h
 	PUBLIC _SCRN_Attribute
@@ -24,15 +21,7 @@
 	
 .CODE		
 	.8086
-		
-	PUBLIC _SCRN_SET_VIDEO_MODE
-	PUBLIC _SCRN_SET_BACKGROUND
-	PUBLIC _SCRN_DISABLE_CURSOR
-	PUBLIC _SCRN_DISABLE_BLINKING_TEXT
-	PUBLIC _SCRN_PRINT_TEXT
-	PUBLIC _SCRN_SAVE_SCR
-	PUBLIC _SCRN_RESTORE_SCR
-
+	JUMPS
 	
 ;----
 ; _SCRN_SET_VIDEO_MODE
@@ -41,6 +30,7 @@
 ; Output: none
 ; Destroys: none
 ;----
+PUBLIC _SCRN_SET_VIDEO_MODE
 _SCRN_SET_VIDEO_MODE PROC
 	push ax						; save ax
 	mov ah,00h					; INT 10h, Function 00h - Set video mode
@@ -53,10 +43,11 @@ _SCRN_SET_VIDEO_MODE ENDP
 ;----
 ; _SCRN_SET_BACKGROUND
 ; For text mode 1 (40x25) set the attribute c
-; Inputs: none
+; Inputs: _SCRN_Attribute has the byte with the color schema
 ; Output: none
 ; Destroys: none
 ;----
+PUBLIC _SCRN_SET_BACKGROUND
 _SCRN_SET_BACKGROUND PROC
 	
 	push ax						; Save registers
@@ -69,18 +60,19 @@ _SCRN_SET_BACKGROUND PROC
 	mov es,ax					; Align es
 	mov di,0					; start index di with 0
 	mov cx,03e8h				; 40x25 = 1000 = 03e8h, do it 1000 times 
-	mov bl,_SCRN_Character			
+	mov bl,20h					; Use space	to fill up the screen		
 	mov bh,_SCRN_Attribute	
 fill_screen:
 	mov es:[di],bx
 	add di,2
 	loop fill_screen
 	
-	pop di
+	pop di						; restore registers
 	pop es
 	pop cx
 	pop bx
 	pop ax
+	
 	ret
 _SCRN_SET_BACKGROUND ENDP
 
@@ -91,6 +83,7 @@ _SCRN_SET_BACKGROUND ENDP
 ; Output: none
 ; Destroys: none
 ;----
+PUBLIC _SCRN_DISABLE_CURSOR
 _SCRN_DISABLE_CURSOR PROC
 	push ax						; Save registers
 	push cx
@@ -109,6 +102,7 @@ _SCRN_DISABLE_CURSOR ENDP
 ; Output: none
 ; Destroys: none
 ;----
+PUBLIC _SCRN_DISABLE_BLINKING_TEXT
 _SCRN_DISABLE_BLINKING_TEXT PROC
 	push ax
 	push bx
@@ -132,6 +126,7 @@ _SCRN_DISABLE_BLINKING_TEXT ENDP
 ; Output: none
 ; Destroys: none
 ;----
+PUBLIC _SCRN_PRINT_TEXT
 _SCRN_PRINT_TEXT PROC
 	push ax						; Save registers
 	push cx
@@ -180,12 +175,11 @@ _SCRN_PRINT_TEXT ENDP
 ; Output: none
 ; Destroys: si,di
 ;----
+PUBLIC _SCRN_SAVE_SCR
 _SCRN_SAVE_SCR PROC
-    
                                ; Save registers we are going to use    
     push cx               
     push es
-
 	                           ; start indexes at 0
 	mov si,0
     
@@ -217,8 +211,8 @@ _SCRN_SAVE_SCR ENDP
 ; Output: none
 ; Destroys: si,di
 ;----
+PUBLIC _SCRN_RESTORE_SCR
 _SCRN_RESTORE_SCR PROC
-
                                ; Save registers we are going to use    
     push cx
     push es

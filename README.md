@@ -15,17 +15,17 @@ this project is my pretext to learn it.
 
 ## Available Tests
 
- * CPU Information
+ * CPU identification
+ * Floppy drive identification and read test
  * PC Speaker buzzer test
- * Screen geometry test
-
+ * Screen geometry test (MCGA 320x200)
 
 ## Usage
 The program is portable. No installation is needed. Just copy the `PCWO2.EXE` 
 file and run it from the command line. Follow the instructions.
 
 ## Binary
-Use the following [link](http://homerotl.com/downloads/pcwo2/pcwo2_build001.zip) to download the 
+Use the following [link](http://homerotl.com/downloads/pcwo2/pcwo2_build010.zip) to download the 
 latest public build of this program. 
 
 ## Compiling PCWO2
@@ -37,7 +37,11 @@ file `PCWO2.EXE`
 
 ## Future Test ideas
 
-  * 3.5" 2.88MB disk test
+  * CPU speed test (benchmark)
+  * Math Co-processor detection and speed test (benchmark)
+  * Hard drive detection
+  * CD-ROM / DVD-ROM detection and test
+  * ZIP Drive test
   * 3.5" LS-120 disk test
   * Screen color test (calibration in general)
   * Add more graphic modes to test
@@ -48,10 +52,6 @@ file `PCWO2.EXE`
   * Gravis Sound card test
   * Keyboard test
   * Mouse test
-  * CPU speed test (benchmark)
-  * Math Co-processor detection and speed test (benchmark)
-  * CD-ROM / DVD-ROM detection and test
-  * ZIP Drive test
  
 ## Other feature ideas
 

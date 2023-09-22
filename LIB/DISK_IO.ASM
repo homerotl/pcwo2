@@ -4,9 +4,10 @@
 
 .MODEL small
 
-MAX_RETRIES EQU 4	
+	MAX_RETRIES EQU 4	
 
-.DATA      
+.DATA
+      
     DIO_RetryCount              db 0
 	DIO_DiskReadBuf				db 9216 dup(?) ; buffer to read from disk, uninitialized
 	
@@ -41,15 +42,8 @@ MAX_RETRIES EQU 4
 	
 .CODE
 	.8086
-		
-	PUBLIC _DIO_READ_SECTOR			; Declare public
-	PUBLIC _DIO_RESET_DISK_SYSTEM
-	PUBLIC _DIO_INT13H_ERROR_IS_SYS_RETRIABLE
-	PUBLIC _DIO_INT13H_ERROR_IS_USER_RETRIABLE
-	PUBLIC _DIO_GET_NUMBER_OF_FD
-	PUBLIC _DIO_DETECT_FD_TYPE
-	PUBLIC _DIO_DETECT_MEDIA_TYPE
-	
+	JUMPS
+
 ;----
 ; _DIO_READ_SECTOR 
 ; Read one disk sector into memory with 3 automatic retries
@@ -62,9 +56,8 @@ MAX_RETRIES EQU 4
 ;	- Carry flag set if there was an error. Register ah contains error code
 ; Destroys:
 ;----
+PUBLIC _DIO_READ_SECTOR
 _DIO_READ_SECTOR PROC
-
-DIO_RetryRead:
 	clc							; Clear carry flag
 	cld							; Ensure the right direction
 	mov ah,02h					; Function
@@ -76,6 +69,14 @@ DIO_RetryRead:
 	ret
 _DIO_READ_SECTOR ENDP
 
+;----
+; _DIO_RESET_DISK_SYSTEM 
+; Reset the disk system
+; Inputs: none
+; Output: none
+; Destroys: none
+;----
+PUBLIC _DIO_RESET_DISK_SYSTEM
 _DIO_RESET_DISK_SYSTEM PROC
 	mov ah,00h					; 
 	int 13h						; Function 00h int 13h - Reset disk system 
@@ -91,6 +92,7 @@ _DIO_RESET_DISK_SYSTEM ENDP
 ;	al = 1 if yes, 0 if not
 ; Destroys: al
 ;----
+PUBLIC _DIO_INT13H_ERROR_IS_SYS_RETRIABLE
 _DIO_INT13H_ERROR_IS_SYS_RETRIABLE PROC
 	cmp ah,06h
 	je YesSysRetriable
@@ -124,6 +126,7 @@ _DIO_INT13H_ERROR_IS_SYS_RETRIABLE ENDP
 ;	al = 1 if yes, 0 if not
 ; Destroys: al
 ;----
+PUBLIC _DIO_INT13H_ERROR_IS_USER_RETRIABLE
 _DIO_INT13H_ERROR_IS_USER_RETRIABLE PROC
 	cmp ah,03h
 	je YesUsrRetriable
@@ -157,6 +160,7 @@ _DIO_INT13H_ERROR_IS_USER_RETRIABLE ENDP
 ;	result is in public byte DIONumberOfDisks. If error, then returns 255 (ffh)
 ; Destroys: none
 ;----
+PUBLIC _DIO_GET_NUMBER_OF_FD
 _DIO_GET_NUMBER_OF_FD PROC	
 	push ax							; save registers
 	push dx
@@ -190,6 +194,7 @@ _DIO_GET_NUMBER_OF_FD EndP
 ;	DIO_DriveType will have a number with the type
 ; Destroys: ES:DI
 ;----
+PUBLIC _DIO_DETECT_FD_TYPE
 _DIO_DETECT_FD_TYPE PROC
 	
 	push ax							; save registers
@@ -254,8 +259,6 @@ DIO_DFDT_05:						; Type 5
 	mov _DIO_DriveType,ah
 	jmp DIO_DFDT_END
 
-; 
-
 DIO_DFDT_02_CYL_27H:
 	mov ah,DIO_DriveType_5_25_360KB
 	mov _DIO_DriveType,ah
@@ -297,6 +300,7 @@ _DIO_DETECT_FD_TYPE ENDP
 ;	_DIO_MediaType will have a number with the type
 ; Destroys: none
 ;----
+PUBLIC _DIO_DETECT_MEDIA_TYPE
 _DIO_DETECT_MEDIA_TYPE PROC
 
 	push ax

@@ -9,15 +9,14 @@
 	
 .CODE
 	.8086
-	EXTRN _KB_WAIT_ANY_KEY:PROC			; From KB.ASM
+	JUMPS
 	
+	EXTRN _KB_WAIT_ANY_KEY:PROC			; From KB.ASM
 	EXTRN _SCRN_SET_VIDEO_MODE:PROC		; From LIB/SCREEN.ASM
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
 	EXTRN _SCRN_SAVE_SCR:PROC
 	EXTRN _SCRN_RESTORE_SCR:PROC
-
-    PUBLIC _SCREEN_GEOMETRY_TEST
 
 ;----
 ; _SCREEN_GEOMETRY_TEST
@@ -28,6 +27,7 @@
 ; Output: none
 ; Destroys: None
 ;----
+PUBLIC _SCREEN_GEOMETRY_TEST
 _SCREEN_GEOMETRY_TEST PROC NEAR
 
 	call _SCRN_SAVE_SCR         ; save current screen
@@ -96,7 +96,7 @@ DarwRightLastLine:
 	
 	call _SCRN_DISABLE_CURSOR		 
 	call _SCRN_DISABLE_BLINKING_TEXT
-		    
+
 	pop es						; Restore used registers
 	pop di
 	pop dx
@@ -105,7 +105,7 @@ DarwRightLastLine:
 	pop ax
 
 	call _SCRN_RESTORE_SCR	    ; restore screen
-			
+
 	ret
 _SCREEN_GEOMETRY_TEST ENDP
 

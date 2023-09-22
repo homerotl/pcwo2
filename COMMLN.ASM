@@ -4,14 +4,34 @@
 
 .MODEL small
 
+.DATA
+	
+    CommLineErrorMsg			db 'ERROR: Invalid command line option',13,10,'$' 
+
+    SyntaxMsg					db 'Syntax:',13,10
+    							db '   pcwo <options>',13,10
+    							db '<options> can be:',13,10
+    							db '   -v   Verbose mode enabled',13,10
+    							db '   -a   Autorun. Skip all user prompts',13,10,'$' 
+    
+    VerboseEnMsg				db ' - Verbose mode enabled',13,10,'$'
+    AutoRunMsg					db ' - Autorun mode enabled',13,10,'$'
+
+    PUBLIC _CommandLineErrorFlag    
+	_CommandLineErrorFlag 		db 0
+
+    PUBLIC _AutoRunFlag
+    _VerboseEnableFlag			db 0
+
+	PUBLIC _VerboseEnableFlag
+    _AutoRunFlag				db 0
+    
 .CODE
 	.8086
+	JUMPS
 	
-JUMPS
-
-	PUBLIC _CL_PARSE_COMMAND_LINE
 ;----
-; PARSE_COMMAND_LINE 
+; _CL_PARSE_COMMAND_LINE 
 ; Parses some command line options
 ; Inputs:
 ; 	- None
@@ -21,16 +41,11 @@ JUMPS
 ;			Bit 1 - Verbose flag 1=Enabled, 0=Disabled
 ;  	 		Bit 2 - Autorun flag 1=Enable, 0=Disabled
 ;			Bit 3-7 Not used
-; Destroys: AX,BX,CX
+; Destroys: ax,bx,cx
 ;----
+PUBLIC _CL_PARSE_COMMAND_LINE
 _CL_PARSE_COMMAND_LINE PROC
-	
-	; al - read characters into
-	; ah - state
-	; bl - number of chars to read
-	; bh - found (valid option)
-	; cl - we return response there
-	; di - index the PSP data segment
+
 								; We are assuming DS has the Program Segment Fix (PSP)
 	mov cl,0					; clear cl
 	mov bl,ds:[0080h]			; Check for command line params	
@@ -136,8 +151,61 @@ PCL_End:
 	jmp PCL_End
 
 PCL_Ret:
-	ret
-	
+
+	ret	
 _CL_PARSE_COMMAND_LINE ENDP
+
+;----
+; _CL_INITIALIZE
+; Check parameters and determined run mode (command line vs interactive)
+; Inputs:
+; 	- cl contains the flags for command line
+; Output: None
+; Destroys: None
+;----
+PUBLIC _CL_INITIALIZE
+_CL_INITIALIZE PROC
+	mov ch,cl                                   ; Copy cl
+	and ch,1									; if the first bit is 1 then we have error
+	cmp ch,1
+	je command_line_error
+	
+	mov ch,cl									; Copy cl
+	and ch,2									; if the second bit is 1 then Verbose is enabled
+	cmp ch,2					
+	jne check_autorun
+	
+	mov ah,09h									; Display Verbose enabled message									
+	mov dx,OFFSET VerboseEnMsg	
+	int 21h										; INT 21h, Function 09h - Print string to console
+	mov _VerboseEnableFlag,1
+	
+check_autorun:
+	mov ch,cl									; Copy cl
+	and ch,4									; if the third bit is 1 then Autorun is enabled
+	cmp ch,4					
+	jne init_end
+	
+	mov ah,09h
+	mov dx,OFFSET AutoRunMsg	
+	int 21h										; INT 21h, Function 09h - Print string to console
+	mov _AutoRunFlag,1
+	jmp init_end	
+
+command_line_error:
+	mov ah,09h
+	mov dx,OFFSET CommLineErrorMsg
+	int 21h										; INT 21h, Function 09h - Print string to console
+	
+	mov ah,09h
+	mov dx,OFFSET SyntaxMsg
+	int 21h										; INT 21h, Function 09h - Print string to console
+	
+	mov _CommandLineErrorFlag,1
+
+init_end:	
+	ret
+_CL_INITIALIZE ENDP
+
 
 END
