@@ -15,7 +15,6 @@ Out=
 DebAssemble=/c
 DebLink=
 DebOut=
-[SHOWFILE]
 
 [FILES]
 1=PCWO2.ASM
