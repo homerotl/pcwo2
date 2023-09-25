@@ -44,7 +44,7 @@
     OPTION3_ROW				EQU 0Ah
     EXIT_ROW				EQU 17h
     FD_START_ROW			EQU 0ch
-    VERSION_COL				EQU 17h        
+    VERSION_COL				EQU 1ch        
         
 .DATA
 
@@ -68,7 +68,7 @@
 	
 	FDTestBaseRow               db 0
 
-    WelcomeLbl					db 'PC Workout - v2-build-$'
+    WelcomeLbl					db 'PC Workout        v2-build-$'
     GoodbyeMsg					db 'Goodbye!',13,10,'$' 
 	InformationLbl				db 'Information$'
 	CPULbl						db 'CPU$'
@@ -85,7 +85,9 @@
     MenuOp1Lb2                  db '[F3] Video Test   $'
     MenuOp1Lb3                  db '[F4] Speaker Test $'
 	EscExitLbl                  db '[F10] Exit$'
-    		
+    PCSpeakerTestPlaying		db 'PC Speaker music playing..$'
+   	PressAnyKeyToStop			db 'Press any key to stop$'
+   	
 .CODE		
 	.8086
 	JUMPS
@@ -550,8 +552,8 @@ FD_TEST_CALCULATE_BASE_ROW PROC
     push bx
     xor ax,ax                          ; ax=0
     mov al,_UI_Drive_Index
-    mov bl,03h                         
-    mul bl                             ; each drive takes 3 rows
+    mov bl,03h                         ; 
+    mul bl                             ; each drive takes 3 rows,  ax = al*bl
     add al,FD_START_ROW                ; add start row
     mov FDTestBaseRow,al  
     pop bx                             ; restore registers
@@ -559,4 +561,29 @@ FD_TEST_CALCULATE_BASE_ROW PROC
 	ret
 FD_TEST_CALCULATE_BASE_ROW ENDP
 
+
+
+;----
+; _UI_PROMPT_PCSPKR_PLAYING
+; Display a message to the user that the speaker test is playing,
+; but that it can be interrupted with any key
+; Inputs: none
+; Output: none
+; Destroys: none
+;----
+PUBLIC _UI_PROMPT_PCSPKR_PLAYING
+_UI_PROMPT_PCSPKR_PLAYING PROC
+        
+    call _UI_CLEAR_PROMPT
+    call _UI_CLEAR_STATUS
+
+    lea si,PCSpeakerTestPlaying
+    call _UI_SET_STATUS
+    
+    lea si,PressAnyKeyToStop
+    call _UI_SET_PROMPT
+    
+    ret
+_UI_PROMPT_PCSPKR_PLAYING ENDP
+    
 END

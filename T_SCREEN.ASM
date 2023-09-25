@@ -38,7 +38,7 @@ _SCREEN_GEOMETRY_TEST PROC NEAR
 	push dx
 	push di
 	push es
-		
+
 	mov _SCRN_VideoMode,13h								
 	call _SCRN_SET_VIDEO_MODE   ; Set graphics mode 13h (Graphics, 320x200)
 	
