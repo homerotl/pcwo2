@@ -15,7 +15,7 @@
         
     MelodySwanLake  db 05h ; Moderato								; measures
     	;db 0dh														; 1 (skip initial silence)
-    	db 06,39h, 02h,32h, 02h,34h, 02h,35h						; 2
+    	db 06h,39h, 02h,32h, 02h,34h, 02h,35h						; 2
     	db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h 			; 3 
     	db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 4
     	db 06h,32h, 02h,32h, 02h,37h, 02h,35h, 02h,34h				; 5
@@ -35,20 +35,23 @@
     	db 0ffh ; ending
     
     ; Allegro
-    NoteTypes db 00h, 02h, 0a9h, 53h		; 1/16 note
-    	db 00h, 03h, 0fdh, 0fch				; 1/16 dotted
-    	db 00h, 05h, 52h, 0a5h				; 1/8 note
-    	db 00h, 07h, 0fbh, 0f8h				; 1/8 note dotted
-    	db 00h, 0ah, 0a5h, 4ah				; 1/4 note
-    	db 00h, 0fh, 0f7h, 0f0h				; 1/4 note dotted
-    	db 00h, 15h, 4ah, 95h				; 1/2 note
-    	db 00h, 1fh, 0efh, 0dfh				; 1/2 note dotted
-    	db 00h, 2ah, 95h, 2ah				; whole note
-    	db 00h, 02h, 0a9h, 53h				; 1/16 rest
-    	db 00h, 05h, 52h, 0a5h				; 1/8 rest
-    	db 00h, 0ah, 0a5h, 4ah				; 1/4 rest
-    	db 00h, 15h, 4ah, 95h				; 1/2 rest
-    	db 00h, 2ah, 95h, 2ah				; whole rest
+    ; Stored in reverse order from least significant to most significant
+    ; [  ls   ] [  ms  ]
+    ; [ls] [bb] [b] [ms]
+    NoteTypesPITCliks db 0fdh, 2ah, 03h, 00h
+    	db 25h, 0c5h, 04h, 00h
+    	db 0a4h, 5ah, 06h, 00h
+    	db 0a1h, 85h, 09h, 00h
+    	db 48h, 0b5h, 0ch, 00h
+    	db 0ebh, 0fh, 13h, 00h
+    	db 0e6h, 65h, 19h, 00h
+    	db 2eh, 1bh, 26h, 00h
+    	db 75h, 0d0h, 32h, 00h
+    	db 0fdh, 2ah, 03h, 00h
+    	db 0a4h, 5ah, 06h, 00h
+    	db 48h, 0b5h, 0ch, 00h
+    	db 0e6h, 65h, 19h, 00h
+    	db 75h, 0d0h, 32h, 00h
    
    NoteFrequencies db 27h, 11h, 0d1h		; C4
    		db 28h, 10h, 0d1h					; C#4
@@ -78,6 +81,9 @@
    		db 40h, 04h, 35h					; C#6
    		db 0ffh							; End of the table
    
+	EXTRN _TimerTimeLapse:BYTE
+	EXTRN _TimerTimerExpired:BYTE
+   
 .CODE
 	.8086
 	JUMPS
@@ -85,7 +91,10 @@
 	EXTRN _UI_PROMPT_PCSPKR_PLAYING:PROC	; From UI.ASM 
 	EXTRN _UI_CLEAR_PROMPT:PROC				
 	EXTRN _UI_CLEAR_STATUS:PROC	
-
+	EXTRN _TIME_SETUP_PIT:PROC				; From LIB/TIME.ASM
+	EXTRN _TIME_START_TIMER:PROC
+	EXTRN _TIME_HAS_TIMER_EXPIRED:PROC
+	
 ;----
 ; _TEST_PC_SPEAKER 
 ; Test the PC Speaker by sending one C note for 1/4 time
@@ -105,6 +114,8 @@ _TEST_PC_SPEAKER PROC
 	push dx
 	
 	call _UI_PROMPT_PCSPKR_PLAYING
+	
+	call _TIME_SETUP_PIT					; Setup counter
 	
 	mov al,0b6h
 	out 43h,al								; Send value 182 to port 43h. This setups the speaker
@@ -143,16 +154,17 @@ _T_PCST_PlayNote:
 	; Lookup note type in NoteTypes for duration
 	mov bl,04h
 	mul bl									; (offset) ax = code * 04h
-	lea si,NoteTypes	
+	lea si,NoteTypesPITCliks	
 	add si,ax								; si = si + offset
 
-	mov ch,[si]								; Load CX:DX with the note duration
-	inc si
-	mov cl,[si]
-	inc si
-	mov dh,[si]
-	inc si
-	mov dl,[si]
+	mov dx,[si]
+	mov cx,[si+2]
+
+	lea si,_TimerTimeLapse
+	mov ax,0000h
+	mov [si],ax
+	mov [si+2],cx
+	mov [si+4],dx
 	
 	; Lookup note frequency in NoteFrequencies	
 	inc di									; load next song byte
@@ -187,9 +199,20 @@ _T_PCST_FreqFound:
 	or al,03h								; Set lower 2 bits to 1
 	out 61h,al								; without affecting the other bits
 	
-	mov ah,86h								; Int 15h, Function 86h
-	int 15h									; Wait for CX:DX micro seconds
+	call _TIME_START_TIMER
+
+_T_PCST_KeepWaiting:
+
+	call _TIME_HAS_TIMER_EXPIRED
+	cmp _TimerTimerExpired,01h				; 01 = expired
+	je _T_PCST_WaitEnded
 	
+	nop
+	
+	jmp _T_PCST_KeepWaiting
+
+_T_PCST_WaitEnded:	
+
 	; Stop the note
 	in al,61h								; Disable speaker
 	and al,0fch								; Set lower 2 bits to 0
