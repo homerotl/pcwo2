@@ -17,7 +17,7 @@ this project is my pretext to learn it.
 
  * CPU identification
  * Floppy drive identification and read test
- * PC Speaker buzzer test
+ * PC Speaker test with music
  * Screen geometry test (MCGA 320x200)
 
 ## Usage
@@ -25,7 +25,7 @@ The program is portable. No installation is needed. Just copy the `PCWO2.EXE`
 file and run it from the command line. Follow the instructions.
 
 ## Binary
-Use the following [link](http://homerotl.com/downloads/pcwo2/PCWO2-20230922.1.zip) to download the 
+Use the following [link](http://homerotl.com/downloads/pcwo2/PCWO2-20231002.1.zip) to download the 
 latest public build of this program. 
 
 ## Compiling PCWO2
@@ -38,7 +38,7 @@ file `PCWO2.EXE`
 ## Future Test ideas
 
   * CPU speed test (benchmark)
-  * Math Co-processor detection and speed test (benchmark)
+  * Math Co-processor test (benchmark)
   * Hard drive detection
   * CD-ROM / DVD-ROM detection and test
   * ZIP Drive test
@@ -55,15 +55,24 @@ file `PCWO2.EXE`
  
 ## Other feature ideas
 
-  * Play a tune on the PC Speaker
   * Auto-increment release numbers
   * Graphical interface
-  * Interactive menu vs. sequence
   * Run with a pre-programmed sequence (no prompts)
-  * Better error handling
+  * Better error handling on disk read error
   * Able to cancel or pause a test
   * Be able to detect if you are in a real machine or DOSBox
 
 ## Recommended reading
+
   * PC Interrupts, Ralf Brown & Jim Kyle, Addison Wesley
   * Peter Norton's Assembly Language Book for the IBM PC, Peter Norton and John Socha, Brady New York
+  * Programmer's Guide to PC&PS/2 Video Systems, Richard Wilton
+  * The 8086 book, Russell Rector and George Alexy
+  * Advanced MS-DOS, Ray Duncan
+  * Assembly Language Primer for the IBM PC & XT, Robert Lafore
+  * An introduction to Assembly Language Programming for the 8086 family, Thomas P. Skinner
+  * 80386/80286 Assembly language programming, William H. Murray III and Chris H. Pappas
+  * The IBM Personal Computer from Inside Out, Sargent and Shoemaker
+  * Learn Multiplatform Assembly Programming with ChibiAkummas Vol 1, ChibiAkummas
+  
+  
