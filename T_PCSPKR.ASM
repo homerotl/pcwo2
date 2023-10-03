@@ -13,26 +13,26 @@
     ; ..
     ; [ff] - end
         
-    MelodySwanLake  db 05h ; Moderato								; measures
-    	;db 0dh														; 1 (skip initial silence)
-    	db 06h,39h, 02h,32h, 02h,34h, 02h,35h						; 2
-    	db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h				; 3 
-    	db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 4
-    	db 06h,32h, 02h,32h, 02h,37h, 02h,35h, 02h,34h				; 5
-    	db 06h,39h, 02h,32h, 02h,34h, 02h,35h, 02h,37h				; 6
-    	db 05h,39h, 02h,35h, 05h,39h, 02h,35h						; 7
-    	db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 8
-    	db 07h,32h, 04h,32h											; 9
-    	db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah				; 10
-    	db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch				; 11
-    	db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh				; 12
-    	db 05h,40h, 02h,3eh, 02h,39h, 02h,35h, 02h,34h, 02h,32h		; 13
-    	db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah				; 14
-    	db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch				; 15
-    	db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh				; 16
-    	db 05h,3fh, 02h,3ah, 04h,37h, 02h,3ah, 02h,40h				; 17
-    	db 05h,40h, 02h,3bh, 05h,40h, 02h,39h						; 18
-    	db 0ffh ; ending
+    MelodySwanLake  db 05h ; Moderato								; measure
+		;db 0dh														; 1 (skip initial silence)
+		db 06h,39h, 02h,32h, 02h,34h, 02h,35h						; 2
+		db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h				; 3 
+		db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 4
+		db 06h,32h, 02h,32h, 02h,37h, 02h,35h, 02h,34h				; 5
+		db 06h,39h, 02h,32h, 02h,34h, 02h,35h, 02h,37h				; 6
+		db 05h,39h, 02h,35h, 05h,39h, 02h,35h						; 7
+		db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 8
+		db 07h,32h, 04h,32h											; 9
+		db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah				; 10
+		db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch				; 11
+		db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh				; 12
+		db 05h,40h, 02h,3eh, 02h,39h, 02h,35h, 02h,34h, 02h,32h		; 13
+		db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah				; 14
+		db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch				; 15
+		db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh				; 16
+		db 05h,3fh, 02h,3ah, 04h,37h, 02h,3ah, 02h,40h				; 17
+		db 05h,40h, 02h,3bh, 05h,40h, 02h,39h						; 18
+		db 0ffh ; ending
     
     ; Allegro
     ; Stored in reverse order from least significant to most significant
