@@ -4,56 +4,105 @@
 .MODEL small
 
 .DATA
-    
-    ; PC Speaker music format
-    ; [00] - Tempo (see table)
-    ; [00] - Note type (see table)
-    ; [00] - Note (see table)
-    ; ..
-    ; ..
-    ; [ff] - end
-        
-    MelodySwanLake  db 05h ; Moderato								; measure
-		;db 0dh														; 1 (skip initial silence)
-		db 06h,39h, 02h,32h, 02h,34h, 02h,35h						; 2
-		db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h				; 3 
-		db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 4
-		db 06h,32h, 02h,32h, 02h,37h, 02h,35h, 02h,34h				; 5
-		db 06h,39h, 02h,32h, 02h,34h, 02h,35h, 02h,37h				; 6
-		db 05h,39h, 02h,35h, 05h,39h, 02h,35h						; 7
-		db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 8
-		db 07h,32h, 04h,32h											; 9
-		db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah				; 10
-		db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch				; 11
-		db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh				; 12
-		db 05h,40h, 02h,3eh, 02h,39h, 02h,35h, 02h,34h, 02h,32h		; 13
-		db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah				; 14
-		db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch				; 15
-		db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh				; 16
-		db 05h,3fh, 02h,3ah, 04h,37h, 02h,3ah, 02h,40h				; 17
-		db 05h,40h, 02h,3bh, 05h,40h, 02h,39h						; 18
-		db 0ffh ; ending
-    
-    ; Allegro
+
+    ; PC Speaker music format BNF
+    ;-----------------------------------------------------
+    ; <musical-piece> ::= <tempo> <score> <terminator>
+    ; <tempo> ::= 00h - 09h (see Tempo table below)
+    ; <score> ::= "" | <note> <score>
+    ; <note> ::= <playing-note> | <rest-note>
+    ; <playing-note> ::= 00h-08h (see Note table) <pitch> 
+    ; <pitch> ::= 00h-57h (see Pitch table)
+    ; <rest-note> ::= 09h-0dh (see Note table)
+    ; <terminator> ::= ffh
+
+	; Tempo
+	;-------------
+	; Grave	   00h
+	; Largo	   01h
+	; Lento	   02h
+	; Adagio   03h
+	; Andante  04h
+	; Moderato 05h
+	; Allegro  06h
+	; Vivace   07h
+	; Presto   08h
+	
+	; Notes
+	;---------------
+	; 1/16 note         00h
+	; 1/16 note dotted	01h
+	; 1/8 note          02h
+	; 1/8 note dotted   03h
+	; 1/4 note          04h
+	; 1/4 note dotted   05h
+	; 1/2 note          06h
+	; 1/2 note dotted   07h
+	; whole note        08h
+	; 1/16 rest         09h
+	; 1/8 rest          0ah
+	; 1/4 rest          0bh
+	; 1/2 rest          0ch
+	; whole rest        0dh
+	
+	; Pitch (see whole table at http://homerotl.com/downloads/pcwo2/pc_spk_pitch.png)
+	;--------------
+	; La  (A0)  00h
+	; La# (A#0) 01h
+	; Si (B0)   02h
+	; Do (C1)   03h
+	; ...
+	; Do (C4)   27h
+	; Do# (C#4) 28h
+	; ...
+	; Si (B7)   56h
+	; Do (C8)   57h
+	
+	; Moderato
+	; To see how these durations are calculated visit:
+	; https://docs.google.com/spreadsheets/d/1tf4jzSlPmdI96fO9jnqa351eW87LG8teQzGnEYhJR9A/edit?usp=sharing
     ; Stored in reverse order from least significant to most significant
     ; [  ls   ] [  ms  ]
-    ; [ls] [bb] [b] [ms]
-    NoteTypesPITCliks db 0fdh, 2ah, 03h, 00h
-    	db 25h, 0c5h, 04h, 00h
-    	db 0a4h, 5ah, 06h, 00h
-    	db 0a1h, 85h, 09h, 00h
-    	db 48h, 0b5h, 0ch, 00h
-    	db 0ebh, 0fh, 13h, 00h
-    	db 0e6h, 65h, 19h, 00h
-    	db 2eh, 1bh, 26h, 00h
-    	db 75h, 0d0h, 32h, 00h
-    	db 0fdh, 2ah, 03h, 00h
-    	db 0a4h, 5ah, 06h, 00h
-    	db 48h, 0b5h, 0ch, 00h
-    	db 0e6h, 65h, 19h, 00h
-    	db 75h, 0d0h, 32h, 00h
-   
-   NoteFrequencies db 27h, 11h, 0d1h		; C4
+    ; [ls] [ms] [ls][ms]
+    NoteTypesPITCliks db 0d8h, 95h, 02h, 00h
+		db 1ah, 0dch, 03h, 00h
+		db 06h, 27h, 05h, 00h
+		db 0deh, 0bch, 07h, 00h
+		db 0ch, 4eh, 0ah, 00h
+		db 12h, 75h, 0fh, 00h
+		db 18h, 9ch, 14h, 00h
+		db 24h, 0eah, 1eh, 00h
+		db 30h, 38h, 29h, 00h
+		db 0d8h, 95h, 02h, 00h
+		db 06h, 27h, 05h, 00h
+		db 0ch, 4eh, 0ah, 00h
+		db 18h, 9ch, 14h, 00h
+		db 30h, 38h, 29h, 00h
+		
+
+    MelodySwanLake  db 06h ; Moderato                               measure
+		;db 0dh                                                     ; 1 (skip initial silence)
+		db 06h,39h, 02h,32h, 02h,34h, 02h,35h                       ; 2
+		db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h             ; 3
+		db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h     ; 4
+		db 06h,32h, 02h,32h, 02h,37h, 02h,35h, 02h,34h              ; 5
+		db 06h,39h, 02h,32h, 02h,34h, 02h,35h, 02h,37h              ; 6
+		db 05h,39h, 02h,35h, 05h,39h, 02h,35h                       ; 7
+		db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h     ; 8
+		db 07h,32h, 04h,32h                                         ; 9
+		db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah              ; 10
+		db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch              ; 11
+		db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh              ; 12
+		db 05h,40h, 02h,3eh, 02h,39h, 02h,35h, 02h,34h, 02h,32h     ; 13
+		db 04h,34h, 04h,35h, 04h,37h, 02h,39h, 02h,3ah              ; 14
+		db 05h,3ch, 02h,3ah, 04h,39h, 02h,3ah, 02h,3ch              ; 15
+		db 05h,3eh, 02h,3ch, 04h,3ah, 02h,3ch, 02h,3eh              ; 16
+		db 05h,3fh, 02h,3ah, 04h,37h, 02h,3ah, 02h,40h              ; 17
+		db 05h,40h, 02h,3bh, 05h,40h								; 18                    
+		db 0ffh ; terminator
+    
+    ; Here we only have the range of pitch used in the melody above
+	NoteFrequencies db 27h, 11h, 0d1h		; C4
    		db 28h, 10h, 0d1h					; C#4
    		db 29h, 0fh, 0e0h					; D4
    		db 2ah, 0eh, 0fbh					; ..

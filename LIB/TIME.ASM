@@ -7,9 +7,10 @@
 
 .DATA      
 
-	; These numbers mean a 48-bit count of the Intel 8253 PIT ticks
-	; The frequency of this IC is 1193180 Hz
-	; [0-4] are  BIOS maintained in memory 0040:006c, [5-6] are PIT maintained
+	; Time here is measured using the Intel 8253 PIT ticks
+	; The most significant 32 bits are stored in memory in a double word
+	; at 0040:006c. The least significant 16 bits are available in
+	; reading from the IC itself.
 	
 	public _TimerTimeLapse
 	_TimerTimeLapse db 6 dup (?) 	; Input for how many ticks we need to wait for
@@ -135,8 +136,8 @@ hte_yes:
 	
 hte_end:
 
-	pop di
-	pop dx										; restore registers we used
+	pop di										; restore registers we used
+	pop dx										
 	pop cx
 	pop bx
 	pop ax
