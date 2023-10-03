@@ -229,21 +229,32 @@ _T_PCST_Rest:
 	; Lookup note type in NoteTypes for duration
 	mov bl,04h
 	mul bl									; (offset) ax = code * 04h
-	lea si,NoteTypes	
+	lea si,NoteTypesPITCliks	
 	add si,ax								; si = si + offset
 
-	mov ch,[si]								; Load CX:DX with the note duration
-	inc si
-	mov cl,[si]
-	inc si
-	mov dh,[si]
-	inc si
-	mov dl,[si]
+	mov dx,[si]								; Load CX:DX with the note duration
+	mov cx,[si+2]
 	
-	; Wait
-	mov ah,86h								; Int 15h, Function 86h
-	int 15h									; Wait for CX:DX micro seconds
+	lea si,_TimerTimeLapse
+	mov ax,0000h
+	mov [si],ax
+	mov [si+2],cx
+	mov [si+4],dx
+
+	call _TIME_START_TIMER
+
+_T_PCST_KeepWaitingRest:
+
+	call _TIME_HAS_TIMER_EXPIRED
+	cmp _TimerTimerExpired,01h				; 01 = expired
+	je _T_PCST_WaitEndedRest
 	
+	nop
+	
+	jmp _T_PCST_KeepWaitingRest
+
+_T_PCST_WaitEndedRest:
+
 	inc di
 	jmp _T_PCST_ReadNextNote
 
