@@ -16,7 +16,7 @@
     MelodySwanLake  db 05h ; Moderato								; measures
     	;db 0dh														; 1 (skip initial silence)
     	db 06h,39h, 02h,32h, 02h,34h, 02h,35h						; 2
-    	db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h 			; 3 
+    	db 02h,37h,  05h,39h, 02h,35h, 05h,39h, 02h,35h				; 3 
     	db 05h,39h, 02h,32h, 02h,35h, 02h,32h, 02h,2eh, 02h,35h		; 4
     	db 06h,32h, 02h,32h, 02h,37h, 02h,35h, 02h,34h				; 5
     	db 06h,39h, 02h,32h, 02h,34h, 02h,35h, 02h,37h				; 6
