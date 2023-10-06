@@ -4,7 +4,7 @@
 .MODEL small
 
 	MAX_RETRIES EQU 4	
-	
+
 .DATA
 
 	EXTRN _VerboseEnableFlag:BYTE	 ; Global flags
@@ -13,25 +13,25 @@
 	EXTRN _DIO_DriveType:BYTE	
 	EXTRN _DIO_MediaType:BYTE			
   	EXTRN _UI_Drive_Index:BYTE       ; From UI.ASM
-    EXTRN _UI_Progress_FDT:BYTE
-    EXTRN _UI_Enter_Esc_Diag_Resp:BYTE
+	EXTRN _UI_Progress_FDT:BYTE
+	EXTRN _UI_Enter_Esc_Diag_Resp:BYTE
 	EXTRN _NumToAsciiB:BYTE			 ; From LIB/STRINGS.ASM
 	
 	StatusEnumDrivesMsg	db 'Counting drives...$' 		
 	StatusDetDrTypeMsg  db 'Detect drive type...$' 
 	StatusDetMedTypeMsg db 'Detect media type...$' 
-    StatusReadTestMsg   db 'Surface read test...$'
+	StatusReadTestMsg   db 'Surface read test...$'
 	RetryMsgQ      		db 'Would you like to retry? (Y/N)$'
-    NoFloppyDrivesMsg	db 'No drives detected$'
-    
+	NoFloppyDrivesMsg	db 'No drives detected$'
+
 	DDT_0				db '5.25"-360KB$'
 	DDT_1				db '5.25"-1.2MB$'
 	DDT_2				db '3.5"-720KB$'
 	DDT_3				db '3.5"-1.44MB$'
 	DDT_4				db '3.5"-2.88MB$'
 	DDT_UK				db 'Unknown$'
-    
-    DMT_0				db '360KB$'
+
+	DMT_0				db '360KB$'
 	DMT_1				db '1.2MB$'
 	DMT_2				db '720KB$'
 	DMT_3				db '1.44MB$'
@@ -41,16 +41,15 @@
 	DMT_FATAL_ERROR     db 'Error$'
 	
 	FDTestSuccess       db 'Success!  $'
-    FDTestFail          db 'Test Fail $'
-    FDTestAbort         db 'Aborted   $'
-    
-    ReadRetries    		db 0
+	FDTestFail          db 'Test Fail $'
+	FDTestAbort         db 'Aborted   $'
+	
+	ReadRetries    		db 0
 	CurrentDriveIndex 	db 0
 	SectorsToRead		db 0
 	CylindersToRead		db 0
 	ReadTestStatus		db 0
-
-
+	
 .CODE
     .8086
 	JUMPS
@@ -67,15 +66,15 @@
 	EXTRN _UI_SET_STATUS:PROC                        ; From UI.ASM
 	EXTRN _UI_DRIVE_TEST_TITLES:PROC
 	EXTRN _UI_ADD_FD_TYPE_VALUE:PROC
-    EXTRN _UI_ADD_FD_MEDIA_VALUE:PROC
-    EXTRN _UI_CLEAR_STATUS:PROC
-    EXTRN _UI_PRINT_TRACK_NUM:PROC
-    EXTRN _UI_DISPLAY_FD_PROGRESS:PROC
-    EXTRN _UI_FD_READ_TEST_RESULT:PROC
-    EXTRN _UI_PROMPT_INSERT_MEDIA:PROC
-    EXTRN _UI_CLEAR_PROMPT:PROC
+	EXTRN _UI_ADD_FD_MEDIA_VALUE:PROC
+	EXTRN _UI_CLEAR_STATUS:PROC
+	EXTRN _UI_PRINT_TRACK_NUM:PROC
+	EXTRN _UI_DISPLAY_FD_PROGRESS:PROC
+	EXTRN _UI_FD_READ_TEST_RESULT:PROC
+	EXTRN _UI_PROMPT_INSERT_MEDIA:PROC
+	EXTRN _UI_CLEAR_PROMPT:PROC
 	EXTRN _KB_YES_NO_Q:PROC							; From LIB/KB.ASM
-	
+
 ;----
 ; _TEST_FLOPPY 
 ; Procedure to detect system floppy drives, identify and test them
@@ -116,8 +115,7 @@ TF_Continue:
 	call _DIO_DETECT_FD_TYPE
 
     call _UI_CLEAR_STATUS
-										; TODO: Make this next part more dynamic to show
-										; drive letter
+
     call _UI_DRIVE_TEST_TITLES
           
 	call DISPLAY_DRIVE_TYPE			

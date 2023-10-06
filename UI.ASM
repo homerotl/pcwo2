@@ -44,7 +44,8 @@
     OPTION3_ROW				EQU 0Ah
     EXIT_ROW				EQU 17h
     FD_START_ROW			EQU 0ch
-    VERSION_COL				EQU 1ch        
+    VERSION_COL				EQU 1ch
+    DRIVE_LETTER_COL		EQU 09h 
         
 .DATA
 
@@ -52,7 +53,8 @@
     EXTRN _SCRN_VideoMode:BYTE					; From LIB/SCREEN.ASM
 	EXTRN _SCRN_Attribute:BYTE		
 	EXTRN _SCRN_Position_X:BYTE
-	EXTRN _SCRN_Position_Y:BYTE					
+	EXTRN _SCRN_Position_Y:BYTE
+	EXTRN _SCRN_One_Char:BYTE
 	
 	EXTRN _VER_VersionLbl:BYTE					; From VERSION.ASM
 
@@ -75,7 +77,7 @@
 	FPULbl						db 'FPU$' 	
 	CPUBenchmarkLbl				db 'CPU Benchmark$'
 	FPUBenchmarkLbl				db 'FPU Benchmark$'
-	DriveTypeNMediaMsg	        db 'Drive X              Media$' 
+	DriveTypeNMediaMsg	        db 'Drive                Media$' 
 	DriveReadTestMsg	        db 'Reading Test [          ] Track$' 
 	BlankStatusMsg              db '                           $'
     MediaNotPresentMsg          db 'Media not present$'
@@ -99,6 +101,7 @@
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
 	EXTRN _SCRN_PRINT_TEXT:PROC
+	EXTRN _SCRN_PRINT_CHAR:PROC
 
 ;----
 ; _UI_SETUP
@@ -242,7 +245,14 @@ _UI_DRIVE_TEST_TITLES PROC
 	
 	lea si,DriveTypeNMediaMsg	
 	call _SCRN_PRINT_TEXT
+	
+	mov al,'A'                              ; Starting drive letter in ASCII
+	add al,_UI_Drive_Index                  ; plus the drive index
+	mov _SCRN_One_Char,al
+    mov _SCRN_Position_X,DRIVE_LETTER_COL	; set the column 
+	call _SCRN_PRINT_CHAR					; output the char in the register al to the coordinates
 
+    mov _SCRN_Position_X,DRIVE_TEST_COL		; set the column 
 	inc _SCRN_Position_Y
 	lea si,DriveReadTestMsg	
 	call _SCRN_PRINT_TEXT

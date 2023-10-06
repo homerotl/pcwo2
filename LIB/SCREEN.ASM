@@ -19,6 +19,9 @@
 	_SCRN_Position_Y 			db 0
 	PUBLIC _SCRN_Position_Y
 	
+	_SCRN_One_Char				db 0
+	PUBLIC _SCRN_One_Char
+	
 .CODE		
 	.8086
 	JUMPS
@@ -234,5 +237,50 @@ _SCRN_RESTORE_SCR PROC
 
 	ret
 _SCRN_RESTORE_SCR ENDP
+
+;----
+; _SCRN_PRINT_CHAR
+; Print one character on the screen coordinates _SCRN_Position_X,_SCRN_Position_Y
+; using color attribute _SCRN_Attribute
+;   - _SCRN_One_Char
+;	- _SCRN_Position_X
+;	- _SCRN_Position_Y coordinates
+;	- _SCRN_Attribute
+; Output: none
+; Destroys:none
+;----
+PUBLIC _SCRN_PRINT_CHAR
+_SCRN_PRINT_CHAR PROC
+
+	push ax							; Save registers
+	push cx
+	push es
+	push di
+	
+	mov ax,0b800h					; Text mode memory starts at 0b800h
+	mov es,ax						; Align ES
+	
+	mov al,_SCRN_Position_Y
+	mov cl,28h						; 28h = 40 for 40 col  mode					
+	mul cl							; ax = (Y * 40) + X
+	mov cl,_SCRN_Position_X			; cx = 00 xx
+	mov ch,00h
+	add ax,cx						; ax = ax + cx
+	shl ax,1						; shift bits left to multiply by 2	
+	mov di,ax
+	mov al,_SCRN_One_Char
+	mov es:[di],al					; Copy character
+	inc di
+	mov al,_SCRN_Attribute
+	mov es:[di],al					; Copy attribute byte to destination
+	
+    pop di							; Restore used registers
+    pop es
+    pop cx
+	pop ax
+	
+	ret
+_SCRN_PRINT_CHAR ENDP
+
 
 END
