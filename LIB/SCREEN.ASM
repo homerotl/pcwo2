@@ -5,7 +5,7 @@
 	
 .DATA
     
-    SAVE_SCR_BUFF               db 2000 dup(?)  ; Buffer to save the screen, uninitialized
+    SAVE_SCR_BUFF               db 4000 dup(?)  ; Buffer to save the screen, uninitialized
 
 	_SCRN_VideoMode 			db 01h			; Public value for the video mode
 	PUBLIC _SCRN_VideoMode
@@ -62,7 +62,8 @@ _SCRN_SET_BACKGROUND PROC
 	mov ax,0b800h				; Text mode memory starts at 0b800h
 	mov es,ax					; Align es
 	mov di,0					; start index di with 0
-	mov cx,03e8h				; 40x25 = 1000 = 03e8h, do it 1000 times 
+	mov cx,03e8h				; 40x25 = 1000 = 03e8h, do it 1000 times
+	;mov cx,07d0h				; 80x25 = 2000 = 07d0h, do it 2000 times	
 	mov bl,20h					; Use space	to fill up the screen		
 	mov bh,_SCRN_Attribute	
 fill_screen:
@@ -141,7 +142,8 @@ _SCRN_PRINT_TEXT PROC
 	mov es,ax					; Align ES
 	
 	mov al,_SCRN_Position_Y
-	mov cl,28h                  ; 28h = 40 for 40 col  mode					
+	mov cl,28h                  ; 28h = 40 for 40 col  mode	
+	;mov cl,50h                  ; 50h = 80 for 80 col  mode						
 	mul cl						; ax = (Y * 40) + X
 	mov cl,_SCRN_Position_X     ; cx = 00 xx
 	mov ch,00h
@@ -195,6 +197,7 @@ _SCRN_SAVE_SCR PROC
     
     cld                        ; clear direction flag
 	mov cx,07d0h               ; set counter, 40x2x25 = 2000 = 07d0h 
+	;mov cx,0fa0h               ; set counter, 80x2x25 = 4000 = 0fa0h 	
 	rep movsb                  ; repeat: move a byte from DS:SI to ES:DI, CX times
 	
     mov cx,es                  ; restore Data Segment
@@ -228,7 +231,8 @@ _SCRN_RESTORE_SCR PROC
     mov es,cx                  
     
     cld                        ; clear direction flag
-	mov cx,07d0h               ; set counter, 40x2x25 = 2000 = 07d0h 
+	mov cx,07d0h               ; set counter, 40x2x25 = 2000 = 07d0h
+	;mov cx,0fa0h               ; set counter, 80x2x25 = 4000 = 0fa0h 	
 	rep movsb                  ; repeat: move a byte from DS:SI to ES:DI, CX times
 	                           
 	                           ; Restore registers
@@ -262,6 +266,7 @@ _SCRN_PRINT_CHAR PROC
 	
 	mov al,_SCRN_Position_Y
 	mov cl,28h						; 28h = 40 for 40 col  mode					
+	;mov cl,50h                  	; 50h = 80 for 80 col  mode		
 	mul cl							; ax = (Y * 40) + X
 	mov cl,_SCRN_Position_X			; cx = 00 xx
 	mov ch,00h

@@ -4,7 +4,8 @@
 
 .MODEL small
 
-	MAX_RETRIES EQU 4	
+	MAX_RETRIES 	EQU 4
+	BIOS_DATA_AREA	EQU 0040h
 
 .DATA
       
@@ -153,37 +154,65 @@ _DIO_INT13H_ERROR_IS_USER_RETRIABLE ENDP
 
 ;----
 ; _DIO_GET_NUMBER_OF_FD
-; Get the number of floppy drives in the system
+; Get the number of floppy drives in the system, from values the BIOS
+; detected
 ; Inputs:
 ;   none
 ; Output: 
-;	result is in public byte DIONumberOfDisks. If error, then returns 255 (ffh)
+;	result is in public byte _DIO_NumberOfDisks. If error, then returns 255 (ffh)
 ; Destroys: none
 ;----
 PUBLIC _DIO_GET_NUMBER_OF_FD
-_DIO_GET_NUMBER_OF_FD PROC	
-	push ax							; save registers
-	push dx
+_DIO_GET_NUMBER_OF_FD PROC
 	
+	push ax							; save registers we affect
+	push bx
+	push dx
+	push ds 				
+
+	mov ax,BIOS_DATA_AREA			; align the data segment with the BIOS data area
+	mov ds,ax
+	
+	mov bx,0010h					; this is the offset where the number of detected drive will be (word)
+
+	mov ax,ds:[bx]					; read one word at that address
+	pop ds							; restore DS
+
+	and ax,00c0h					; apply mask to isolate bits 7-6
+	shr al,6						; shift bits right 6 times to get number
+	
+	cmp al,0						; if 0, could be 1 or 0
+	je DIO_GNumFD2ndCheck
+
+	inc al							; plus one
+	mov	_DIO_NumberOfDisks,al		; put it on the output variable
+	jmp DIO_GNumFDEnd
+
+DIO_GNumFD2ndCheck:
+
 	clc								; clear carry flag	
 	
 	mov ah,08h						; Function 08h int 13h - Get drive params
-	mov dl,0
+	mov dl,0						; use drive 0
 	int 13h
 
 	jc DIO_GNumFDError				; If error jump
 	
 	mov _DIO_NumberOfDisks,dl		; save the number of drives in the public variable
-	jmp DIO_GNumFDRet				; get to the end
+	jmp DIO_GNumFDEnd				; get to the end
 	
 DIO_GNumFDError:
 	mov _DIO_NumberOfDisks,0ffh		; 255 = error
 	
-DIO_GNumFDRet:
-	pop dx							; restore registers and return
+DIO_GNumFDEnd:
+	
+	pop dx							; restore other registers we used
+	pop bx							
 	pop ax
-	ret
-_DIO_GET_NUMBER_OF_FD EndP
+	
+	ret		
+	
+_DIO_GET_NUMBER_OF_FD ENDP
 
 ;----
 ; _DIO_DETECT_FD_TYPE

@@ -5,5 +5,5 @@
 .MODEL small
 .DATA
 	PUBLIC _VER_VersionLbl
-    _VER_VersionLbl db '20231005.1$'
+    _VER_VersionLbl db '20231006.1$'
  END

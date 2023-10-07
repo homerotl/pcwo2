@@ -92,7 +92,8 @@ _TEST_FLOPPY PROC
 										; retuns DIONumberOfDisks
     call _UI_CLEAR_STATUS
     
-	cmp _DIO_NumberOfDisks,0			; If its 0 we are done
+    mov bl,_DIO_NumberOfDisks
+	cmp bl,0			; If its 0 we are done
 	je TF_NoFloppyDrives
 	
 	cmp _DIO_NumberOfDisks,0feh			; If error we are done
