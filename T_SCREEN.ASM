@@ -15,8 +15,8 @@
 	EXTRN _SCRN_SET_VIDEO_MODE:PROC		; From LIB/SCREEN.ASM
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
-	EXTRN _SCRN_SAVE_SCR:PROC
-	EXTRN _SCRN_RESTORE_SCR:PROC
+	EXTRN _SCRN_SAVE_UI_SCR:PROC
+	EXTRN _SCRN_RESTORE_UI_SCR:PROC
 
 ;----
 ; _SCREEN_GEOMETRY_TEST
@@ -30,7 +30,7 @@
 PUBLIC _SCREEN_GEOMETRY_TEST
 _SCREEN_GEOMETRY_TEST PROC NEAR
 
-	call _SCRN_SAVE_SCR         ; save current screen
+	call _SCRN_SAVE_UI_SCR		; save current screen
 	
 	push ax						; Save used registers
 	push bx
@@ -104,7 +104,7 @@ DarwRightLastLine:
 	pop bx
 	pop ax
 
-	call _SCRN_RESTORE_SCR	    ; restore screen
+	call _SCRN_RESTORE_UI_SCR	; restore screen
 
 	ret
 _SCREEN_GEOMETRY_TEST ENDP

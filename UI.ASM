@@ -7,12 +7,13 @@
 
 ; Color schema
 
-	BACKGROUND_STYLE		EQU 40h ; Black text over red background
-	TITLE_STYLE				EQU 04h ; Red text over black background
-	LABEL_STYLE				EQU 4fh ; White text over red background
-	DYN_INFO_STYLE			EQU 40h ; Black text over red background
-	MENU_OPTION_STYLE		EQU 04h ; Red text over black background
-	STATUS_STYLE			EQU 40h ; Black text over red background
+	BACKGROUND_STYLE		EQU 07h ; White text over Black background
+	TITLE_STYLE				EQU 0BDh ; Intense violet text over Intense cyan background
+	LABEL_STYLE				EQU 05h ; Violet text over Black background
+	DYN_INFO_STYLE			EQU 07h ; White text over Black background
+	MENU_OPTION_STYLE_EN	EQU 0Dh ; Intense violet text over Black background
+	MENU_OPTION_STYLE_DI	EQU 05h ; Violet text over Black background
+	STATUS_STYLE			EQU 0Fh ; Intense white text over Black background
 	
 ; Text mode 40x25 layout
 
@@ -20,32 +21,20 @@
     STATUS_ROW				EQU 16h
     PROMPT_COL				EQU 0ch
     PROMPT_ROW 				EQU 17h
-    TITLE_COL				EQU 01h
-    TITLE_ROW				EQU 01h
-    INFO_TITLE_ROW			EQU 02h
-    INFO_TITLE_COL			EQU 01h
-    CPU_TITLE_ROW			EQU 03h
-    FPU_TITLE_ROW			EQU 04h
+
 	CPU_ID_COL				EQU 05h
-    CPU_ID_ROW				EQU 03h
+    CPU_ID_ROW				EQU 04h
 	FPU_ID_COL				EQU 05h
-    FPU_ID_ROW				EQU 04h
-    CPU_BENCH_TITLE_COL		EQU 13h
-    CPU_BENCH_TITLE_ROW		EQU	03h    
-    FPU_BENCH_TITLE_ROW		EQU	04h    
+    FPU_ID_ROW				EQU 05h
+
     DRIVE_TEST_COL			EQU 03h
     DRIVE_ID_COL			EQU 0bh
     DRIVE_MEDIA_COL			EQU 1eh
     TRACK_NUM_COL			EQU 23h
-    FD_READ_TEST_COL		EQU 11h    
-    OPTION1_COL				EQU 01h
-    OPTION1_ROW				EQU 06h
-    OPTION2_ROW				EQU 08h
-    OPTION3_ROW				EQU 0Ah
-    EXIT_ROW				EQU 17h
-    FD_START_ROW			EQU 0ch
-    VERSION_COL				EQU 1ch
+    FD_READ_TEST_COL		EQU 11h
+    FD_START_ROW			EQU 0dh
     DRIVE_LETTER_COL		EQU 09h 
+
         
 .DATA
 
@@ -70,26 +59,33 @@
 	
 	FDTestBaseRow               db 0
 
-    WelcomeLbl					db 'PC Workout        v2-build-$'
     GoodbyeMsg					db 'Goodbye!',13,10,'$' 
-	InformationLbl				db 'Information$'
-	CPULbl						db 'CPU$'
-	FPULbl						db 'FPU$' 	
-	CPUBenchmarkLbl				db 'CPU Benchmark$'
-	FPUBenchmarkLbl				db 'FPU Benchmark$'
+
 	DriveTypeNMediaMsg	        db 'Drive                Media$' 
 	DriveReadTestMsg	        db 'Reading Test [          ] Track$' 
 	BlankStatusMsg              db '                           $'
     MediaNotPresentMsg          db 'Media not present$'
     RetrySkipMsg                db '[ENTER] retry  [ESC] skip  $'
 	ProgressChar                db '=$'
-    MenuOp1Lbl                  db '[F2] Floppy Test  $'
-    MenuOp1Lb2                  db '[F3] Video Test   $'
-    MenuOp1Lb3                  db '[F4] Speaker Test $'
-	EscExitLbl                  db '[F10] Exit$'
     PCSpeakerTestPlaying		db 'PC Speaker music playing..$'
    	PressAnyKeyToStop			db 'Press any key to stop$'
    	
+								;     X,   Y, Attribute  , String
+   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2 - by Homero Trevino$'
+								db	01h, 03h, LABEL_STYLE,	'Information$'
+								db	01h, 04h, LABEL_STYLE,	'CPU$'
+								db	01h, 05h, LABEL_STYLE,	'FPU$'
+								db	13h, 04h, LABEL_STYLE,	'CPU Benchmark$'
+								db	13h, 05h ,LABEL_STYLE,	'FPU Benchmark$'
+								db	0ffh ; End of data
+    							
+								;	  X,   Y, Enabled, String
+	Buttons						db	01h, 07h,     01h, '[F2] Floppy Test  $'
+								db	01h, 09h,     01h, '[F3] Video Test   $'
+								db	01h, 0Bh,     01h, '[F4] Speaker Test $'
+								db	01h, 17h,     01h, '[F10] Exit$'
+								db	0ffh ; End of data
+
 .CODE		
 	.8086
 	JUMPS
@@ -102,7 +98,9 @@
 	EXTRN _SCRN_DISABLE_BLINKING_TEXT:PROC
 	EXTRN _SCRN_PRINT_TEXT:PROC
 	EXTRN _SCRN_PRINT_CHAR:PROC
-
+	EXTRN _SCRN_SAVE_OSCREEN:PROC
+	EXTRN _SCRN_RESTORE_OSCREEN:PROC
+	
 ;----
 ; _UI_SETUP
 ; Set the basic screen with the video mode, background, titles and basic options.
@@ -113,6 +111,10 @@
 PUBLIC _UI_SETUP
 _UI_SETUP PROC
 	
+	push ax
+	
+	call _SCRN_SAVE_OSCREEN						; Save current video mode and screen
+
 	mov _SCRN_VideoMode,01h								
 	call _SCRN_SET_VIDEO_MODE					; Setup text mode 1 (40x25x16)
 	
@@ -122,41 +124,44 @@ _UI_SETUP PROC
 	mov _SCRN_Attribute,BACKGROUND_STYLE 
 	call _SCRN_SET_BACKGROUND
 
-	mov _SCRN_Attribute,TITLE_STYLE	
-	mov _SCRN_Position_X,TITLE_COL
-	mov _SCRN_Position_Y,TITLE_ROW
-	lea si,WelcomeLbl
-	call _SCRN_PRINT_TEXT
-
-	mov _SCRN_Position_X,VERSION_COL
+	lea si,StaticLabels	
+	call RENDER_LABELS
+	
 	lea si,_VER_VersionLbl
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Attribute,LABEL_STYLE	
-	mov _SCRN_Position_X,INFO_TITLE_COL
-	mov _SCRN_Position_Y,INFO_TITLE_ROW
-	lea si,InformationLbl
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_Y,CPU_TITLE_ROW
-	lea si,CPULbl
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_Y,FPU_TITLE_ROW
-	lea si,FPULbl
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_X,CPU_BENCH_TITLE_COL
-	mov _SCRN_Position_Y,CPU_BENCH_TITLE_ROW
-	lea si,CPUBenchmarkLbl
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_Y,FPU_BENCH_TITLE_ROW
-	lea si,FPUBenchmarkLbl
-	call _SCRN_PRINT_TEXT	
+	call RENDER_LABELS
 
+	pop ax
+	
 	ret
 _UI_SETUP ENDP
+
+
+RENDER_LABELS PROC
+_UIS_PrintAllLabels:
+	cmp byte ptr [si],0ffh
+	je _UIS_AllLabelsDone
+
+	mov al,byte ptr [si]
+	mov _SCRN_Position_X,al						; Copy X (column)
+	inc si
+	mov al,byte ptr [si]
+	mov _SCRN_Position_Y,al						; Copy Y (row)
+	inc si	
+	mov al, byte ptr [si]
+	mov _SCRN_Attribute,al						; Copy color attribute
+	inc si
+	call _SCRN_PRINT_TEXT
+_UIS_LookForEndOfLabel:
+	cmp byte ptr [si],'$'
+	je _UIS_FoundEndOfLabel
+	inc si
+	jmp _UIS_LookForEndOfLabel
+_UIS_FoundEndOfLabel:
+	inc si
+	jmp _UIS_PrintAllLabels
+_UIS_AllLabelsDone:
+	ret
+RENDER_LABELS ENDP
 
 ;----
 ; _UI_SET_STATUS
@@ -474,8 +479,7 @@ _UI_PROMPT_INSERT_MEDIA ENDP
 PUBLIC _UI_TEARDOWN
 _UI_TEARDOWN PROC
 
-	mov _SCRN_VideoMode,03h					
-	call _SCRN_SET_VIDEO_MODE					; Setup text mode 3 (80x25x16)
+	call _SCRN_RESTORE_OSCREEN					; Restore original screen
 	
 	mov ah,09h									; INT 21h, Function 09h - Print string to console
 	mov dx,OFFSET GoodbyeMsg	
@@ -493,28 +497,37 @@ _UI_TEARDOWN ENDP
 ; Destroys: None
 ;----
 PUBLIC _UI_DISPLAY_MENU
-_UI_DISPLAY_MENU PROC
-
-	mov _SCRN_Attribute,MENU_OPTION_STYLE	
-	mov _SCRN_Position_X,OPTION1_COL
-	mov _SCRN_Position_Y,OPTION1_ROW
-	lea si,MenuOp1Lbl
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_Y,OPTION2_ROW
-	lea si,MenuOp1Lb2
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_Y,OPTION3_ROW
-	lea si,MenuOp1Lb3
-	call _SCRN_PRINT_TEXT
-	
-	mov _SCRN_Position_Y,EXIT_ROW
-	lea si,EscExitLbl
-	call _SCRN_PRINT_TEXT
-	
+_UI_DISPLAY_MENU PROC	
+	lea si,Buttons
+	call RENDER_BUTTONS
 	ret
 _UI_DISPLAY_MENU ENDP
+
+RENDER_BUTTONS PROC
+_UIS_RenderAllButtons:
+	cmp byte ptr [si],0ffh
+	je _UIS_AllButtonsDone
+
+	mov al,byte ptr [si]
+	mov _SCRN_Position_X,al						; Copy X (column)
+	inc si
+	mov al,byte ptr [si]
+	mov _SCRN_Position_Y,al						; Copy Y (row)
+	inc si	
+	inc si										; skip the active-byte
+	mov _SCRN_Attribute,MENU_OPTION_STYLE_EN	; Copy color attribute
+	call _SCRN_PRINT_TEXT
+_UIS_LookForEndOfString:
+	cmp byte ptr [si],'$'
+	je _UIS_FoundEndOfString
+	inc si
+	jmp _UIS_LookForEndOfString
+_UIS_FoundEndOfString:
+	inc si
+	jmp _UIS_RenderAllButtons
+_UIS_AllButtonsDone:
+	ret
+RENDER_BUTTONS ENDP
 
 ;----
 ; _UI_PRINT_CPU_ID
