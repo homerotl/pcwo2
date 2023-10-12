@@ -4,46 +4,242 @@
 
 .MODEL small
 
-	MAX_RETRIES 	EQU 4
-	BIOS_DATA_AREA	EQU 0040h
+	MAX_RETRIES						EQU 4
+	BIOS_DATA_AREA					EQU 0040h
 
-.DATA
-      
-    DIO_RetryCount              db 0
-	DIO_DiskReadBuf				db 9216 dup(?) ; buffer to read from disk, uninitialized
+	DIO_DRIVE_TYPE_5_25_360KB		EQU 0
+	DIO_DRIVE_TYPE_5_25_1200KB		EQU 1
+	DIO_DRIVE_TYPE_3_5_720KB		EQU 2
+	DIO_DRIVE_TYPE_3_5_1440KB		EQU 3
+	DIO_DRIVE_TYPE_3_5_2880KB		EQU 4
+	DIO_DRIVE_TYPE_UNKNOWN			EQU 0ffh
 	
+	DIO_MEDIA_TYPE_360K				EQU	0
+	DIO_MEDIA_TYPE_1200K			EQU	1
+	DIO_MEDIA_TYPE_720K				EQU 2
+	DIO_MEDIA_TYPE_1440K			EQU 3
+	DIO_MEDIA_TYPE_2880K			EQU 4	
+	DIO_MEDIA_TYPE_UNKNOWN			EQU 0fch	; No error, but type unknown
+	DIO_MEDIA_TYPE_SYS_RET_ERROR	EQU	0fdh	; System retryable error
+	DIO_MEDIA_TYPE_USR_RET_ERROR	EQU	0feh	; User retryable error
+	DIO_MEDIA_TYPE_FATAL_ERROR		EQU 0ffh	; Fatal error
+	
+.DATA
+      	
 	public _DIO_NumberOfDisks
 	_DIO_NumberOfDisks 			db 0
 
-	; Drive types
-	DIO_DriveType_5_25_360KB	db 0
-	DIO_DriveType_5_25_1200KB	db 1
-	DIO_DriveType_3_5_720KB		db 2
-	DIO_DriveType_3_5_1440KB	db 3
-	DIO_DriveType_3_5_2880KB	db 4
-	DIO_DriveType_ERROR 		db 0feh	
-	DIO_DriveType_UNKNOWN 		db 0ffh
-	
 	public _DIO_DriveType
 	_DIO_DriveType 				db 0
-
-	; Media types
-	DIO_MediaType_360K			db 0
-	DIO_MediaType_1200K			db 1
-	DIO_MediaType_720K			db 2
-	DIO_MediaType_1440K			db 3
-	DIO_MediaType_2880K			db 4	
-	DIO_MediaType_UNKNOWN		db 0fch		; No error, but type unknown
-	DIO_MediaType_SYS_RET_ERROR	db 0fdh		; System retryable error
-	DIO_MediaType_USR_RET_ERROR	db 0feh		; User retryable error
-	DIO_MediaType_FATAL_ERROR	db 0ffh		; Fatal error
 
 	public _DIO_MediaType
 	_DIO_MediaType				db 0
 	
+	SysRetryableList			db 06h,0ah,0bh,10h,80h,0aah,0cch,0ffh,00h ; 00 terminated
+	UsrRetryableList			db 03h,0ah,0bh,10h,80h,0aah,0cch,0ffh,00h ; 00 terminated
+	
+								; Type,	Tracks,	Sectors,	Type
+	Int_13h_Drive_Type_Table	db 01h, 27h, 	09h,		DIO_DRIVE_TYPE_5_25_360KB
+								db 02h, 27h,	09h,		DIO_DRIVE_TYPE_5_25_360KB
+								db 02h, 4fh,	0fh,		DIO_DRIVE_TYPE_5_25_1200KB
+								db 03h, 4fh,	09h,		DIO_DRIVE_TYPE_3_5_720KB
+								db 04h, 4fh,	09h,		DIO_DRIVE_TYPE_3_5_720KB
+								db 04h, 4fh,	12h,		DIO_DRIVE_TYPE_3_5_1440KB
+								db 05h, 4fh,	24h,		DIO_DRIVE_TYPE_3_5_2880KB
+								db 00h	; Terminate data
+
+																		  ; Stored little-endian style
+	Media_Type_Total_Sectors_Table	db 0d0h, 02h,	DIO_MEDIA_TYPE_360K	  ; 02d0h (720 total sectors)
+									db 60h, 09h,	DIO_MEDIA_TYPE_1200K  ; 0960h (2400 total sectors)
+									db 0a0h, 05h,	DIO_MEDIA_TYPE_720K	  ; 05a0h (1440 total sectors)
+									db 40h, 0bh,	DIO_MEDIA_TYPE_1440K  ; 0b40h (2880 total sectors)
+									db 80h, 16h,	DIO_MEDIA_TYPE_2880K  ; 0b40h (5760 total sectors)
+									db 00h	; Terminate data
+	
+	DIO_RetryCount              db 0
+	DIO_DiskReadBuf				db 9216 dup(?) ; buffer to read from disk, uninitialized
+		
 .CODE
 	.8086
 	JUMPS
+
+;----
+; _DIO_DETECT_FD_TYPE
+; Get type of floppy drive
+; Inputs:
+;   dl = drive number
+; Output: 
+;	DIO_DriveType will have a number with the type
+; Destroys: none
+;----
+PUBLIC _DIO_DETECT_FD_TYPE
+_DIO_DETECT_FD_TYPE PROC
+	
+	push ax							; save registers
+	push bx
+	push cx
+	push dx
+	push es
+	push di
+	push si
+									; Default is Unknown
+	mov _DIO_DriveType,DIO_DRIVE_TYPE_UNKNOWN
+	
+	mov ah,08h						; Function 08h int 13h - Get drive params
+	int 13h							; bl=type, ch=tracks, cl=sectors
+	
+	lea si,Int_13h_Drive_Type_Table
+
+DIO_DFDT_Loop:
+
+	cmp byte ptr [si],00h			; Check if we are at the end
+	je DIO_DFDT_END
+	
+	cmp byte ptr [si],bl			; Check drive type
+	je DIO_DFDT_DriveTypeMatch		; Found drive type
+	
+	add si,4						; Skip to the next record
+	
+	jmp DIO_DFDT_Loop
+
+DIO_DFDT_DriveTypeMatch:
+	
+	inc si
+	cmp byte ptr [si],ch
+	je DIO_DFDT_TrackNumMatch		; Found drive type
+
+	add si,3						; Skip to the next record
+
+	jmp DIO_DFDT_Loop
+	
+DIO_DFDT_TrackNumMatch:
+	
+	inc si
+	cmp byte ptr [si],cl
+	je DIO_DFDT_SectorNumMatch
+
+	add si,2						; Skip to the next record
+	
+	jmp DIO_DFDT_Loop
+	
+DIO_DFDT_SectorNumMatch:
+	
+	inc si
+	mov al,byte ptr [si]
+	mov _DIO_DriveType,al
+	
+	jmp DIO_DFDT_END
+
+DIO_DFDT_END:
+	
+	pop si
+	pop di
+	pop es
+	pop dx							; restore registers
+	pop cx
+	pop bx
+	pop ax
+	
+	ret
+_DIO_DETECT_FD_TYPE ENDP
+
+;----
+; _DIO_DETECT_MEDIA_TYPE
+; Detect the type of media currently in the dirive.
+; Inputs:
+;   dl = drive number
+; Output: 
+;	_DIO_MediaType will have a number with the type
+; Destroys: none
+;----
+PUBLIC _DIO_DETECT_MEDIA_TYPE
+_DIO_DETECT_MEDIA_TYPE PROC
+
+	push ax
+	push bx
+	push cx
+	push di
+	                            ; set max retries
+	mov DIO_RetryCount,MAX_RETRIES
+
+DIO_DMT_Retry:
+								; Read boot sector
+	mov ch,0					; track 0
+	mov dh,0					; side/head 0
+	mov al,1					; read 1 sector
+								; data will be at DIO_DiskReadBuf
+	call _DIO_READ_SECTOR
+
+    jnc DIO_DMT_Continue        ; if successful, continue
+    
+    cmp DIO_RetryCount,0
+    je DIO_DMT_No_More_Retries
+    
+    call _DIO_INT13H_ERROR_IS_SYS_RETRIABLE
+    cmp al,01h
+    je DIO_DMT_Setup_Retry
+    
+    call _DIO_INT13H_ERROR_IS_USER_RETRIABLE
+    cmp al,01h
+    je DIO_DMT_User_Ret_Error
+    
+    jmp DIO_DMT_FATAL_ERROR  
+    
+DIO_DMT_Setup_Retry:
+    dec DIO_RetryCount
+    jmp DIO_DMT_Retry
+
+DIO_DMT_No_More_Retries:
+    call _DIO_INT13H_ERROR_IS_USER_RETRIABLE
+    cmp al,01h
+    je DIO_DMT_User_Ret_Error
+    jmp DIO_DMT_Fatal_Error  
+    
+DIO_DMT_User_Ret_Error:	
+	mov al,DIO_MEDIA_TYPE_USR_RET_ERROR
+	mov _DIO_MediaType,al		
+	jmp DIO_DMT_End
+
+DIO_DMT_Fatal_Error:	
+	mov al,DIO_MEDIA_TYPE_FATAL_ERROR
+	mov _DIO_MediaType,al	
+  	jmp DIO_DMT_End  
+    
+DIO_DMT_Continue:
+	
+	lea di,DIO_DiskReadBuf		; align di with the read buffer
+	mov ax,di[13h]				; copy to ax the total number of sectors
+
+								; align di with 
+	lea di,Media_Type_Total_Sectors_Table
+
+DIO_DMT_Keep_Looking:	
+	cmp byte ptr [di],00h		; are we at the end?
+	je DIO_DMT_Unknown
+
+	cmp [di],ax					; Compare AX with pointer
+	je DIO_DMT_Found_Media
+
+	add di,3					; advance index to the next entry
+	jmp DIO_DMT_Keep_Looking
+
+DIO_DMT_Found_Media:
+	add di,2					; skip the two bytes
+	mov al,byte ptr [di]		; copy value of the media type to destination
+	mov _DIO_MediaType,al	
+	jmp DIO_DMT_End
+
+DIO_DMT_Unknown:	
+	mov al,DIO_MEDIA_TYPE_UNKNOWN
+	mov _DIO_MediaType,al		
+
+DIO_DMT_End:
+	pop di
+	pop cx
+	pop bx
+	pop ax
+	ret
+_DIO_DETECT_MEDIA_TYPE ENDP
 
 ;----
 ; _DIO_READ_SECTOR 
@@ -95,26 +291,23 @@ _DIO_RESET_DISK_SYSTEM ENDP
 ;----
 PUBLIC _DIO_INT13H_ERROR_IS_SYS_RETRIABLE
 _DIO_INT13H_ERROR_IS_SYS_RETRIABLE PROC
-	cmp ah,06h
-	je YesSysRetriable
-	cmp ah,0Ah
-	je YesSysRetriable
-	cmp ah,0Bh
-	je YesSysRetriable
-	cmp ah,10h
-	je YesSysRetriable
-	cmp ah,80h
-	je YesSysRetriable
-	cmp ah,0AAh
-	je YesSysRetriable
-	cmp ah,0CCh
-	je YesSysRetriable
-	cmp ah,0FFh
-	je YesSysRetriable
-	mov al,0
-	ret
-YesSysRetriable:
-	mov al,1
+	push si
+	mov al,0							; Default is not retryable
+	lea si,SysRetryableList
+_DIO_INT13H_IsSysRet_Loop:
+	cmp byte ptr [si],00h				; Are we at the end of the list?
+	je _DIO_INT13H_IsSysRet_End	
+
+	cmp byte ptr [si],ah				; Check if input on the list
+	je _DIO_INT13H_IsSysRet_Yes
+	inc si								; increment index
+	jmp _DIO_INT13H_IsSysRet_Loop		; and keep trying
+	
+_DIO_INT13H_IsSysRet_Yes:
+	mov al,1							; Found it
+	
+_DIO_INT13H_IsSysRet_End:
+	pop si
 	ret
 _DIO_INT13H_ERROR_IS_SYS_RETRIABLE ENDP
 
@@ -129,26 +322,23 @@ _DIO_INT13H_ERROR_IS_SYS_RETRIABLE ENDP
 ;----
 PUBLIC _DIO_INT13H_ERROR_IS_USER_RETRIABLE
 _DIO_INT13H_ERROR_IS_USER_RETRIABLE PROC
-	cmp ah,03h
-	je YesUsrRetriable
-	cmp ah,0Ah
-	je YesUsrRetriable
-	cmp ah,0Bh
-	je YesUsrRetriable
-	cmp ah,10h
-	je YesUsrRetriable
-	cmp ah,80h
-	je YesUsrRetriable
-	cmp ah,0AAh
-	je YesUsrRetriable
-	cmp ah,0CCh
-	je YesUsrRetriable
-	cmp ah,0FFh
-	je YesUsrRetriable
-	mov al,0
-	ret
-YesUsrRetriable:
-	mov al,1
+	push si
+	mov al,0							; Default is not retryable
+	lea si,UsrRetryableList
+_DIO_INT13H_IsUsrRet_Loop:
+	cmp byte ptr [si],00h				; Are we at the end of the list?
+	je _DIO_INT13H_IsUsrRet_End	
+
+	cmp byte ptr [si],ah				; Check if input on the list
+	je _DIO_INT13H_IsUsrRet_Yes
+	inc si								; increment index
+	jmp _DIO_INT13H_IsUsrRet_Loop		; and keep trying
+	
+_DIO_INT13H_IsUsrRet_Yes:
+	mov al,1							; Found it
+	
+_DIO_INT13H_IsUsrRet_End:
+	pop si
 	ret
 _DIO_INT13H_ERROR_IS_USER_RETRIABLE ENDP
 
@@ -213,231 +403,5 @@ DIO_GNumFDEnd:
 	ret		
 	
 _DIO_GET_NUMBER_OF_FD ENDP
-
-;----
-; _DIO_DETECT_FD_TYPE
-; Get the number of floppy drives in the system
-; Inputs:
-;   dl = drive number
-; Output: 
-;	DIO_DriveType will have a number with the type
-; Destroys: ES:DI
-;----
-PUBLIC _DIO_DETECT_FD_TYPE
-_DIO_DETECT_FD_TYPE PROC
-	
-	push ax							; save registers
-	push bx
-	push cx
-	push dx
-									; Do I have to worry about ES:DI?
-	mov ah,08h						; Function 08h int 13h - Get drive params
-	int 13h
-	
-	jc DIO_DFDT_ERROR
-	
-	cmp bl,01h						; Check type
-	je DIO_DFDT_01
-
-	cmp bl,02h						
-	je DIO_DFDT_02
-
-	cmp bl,03h						
-	je DIO_DFDT_03
-
-	cmp bl,04h						
-	je DIO_DFDT_04
-
-	cmp bl,05h						
-	je DIO_DFDT_05
-	
-	jmp DIO_DFDT_UNKNOWN
-
-DIO_DFDT_ERROR:
-    mov ah,DIO_DriveType_UNKNOWN
-	mov _DIO_DriveType,ah
-	                                ; TODO: Maybe set the error on a global variable?
-	jmp DIO_DFDT_END
-	
-DIO_DFDT_01:						; Type 1 5.25" 360KB
-	mov ah,DIO_DriveType_5_25_360KB
-	mov _DIO_DriveType,ah
-	jmp DIO_DFDT_END
-	
-DIO_DFDT_02:						; Type 2, depends on cylinders
-	cmp ch,27h
-	je DIO_DFDT_02_CYL_27H			; 39 cylinders
-	cmp ch,4fh
-	je DIO_DFDT_02_CYL_4FH			; 79 cylinders
-	
-	jmp DIO_DFDT_UNKNOWN
-
-DIO_DFDT_03:						; Type 3, need more examples, but so far 720K
-	jmp DIO_DFDT_04_SEC09
-
-DIO_DFDT_04:						; Type 4, depends on sectors
-	cmp cl,09h
-	je DIO_DFDT_04_SEC09			; 9 sectores
-	cmp cl,12h
-	je DIO_DFDT_04_SEC12			; 18 sectors
-
-	jmp DIO_DFDT_UNKNOWN
-	
-DIO_DFDT_05:						; Type 5
-	mov ah,DIO_DriveType_3_5_2880KB
-	mov _DIO_DriveType,ah
-	jmp DIO_DFDT_END
-
-DIO_DFDT_02_CYL_27H:
-	mov ah,DIO_DriveType_5_25_360KB
-	mov _DIO_DriveType,ah
-	jmp DIO_DFDT_END
-
-DIO_DFDT_02_CYL_4FH:
-	mov ah,DIO_DriveType_5_25_1200KB
-	mov _DIO_DriveType,ah
-	jmp DIO_DFDT_END
-	
-DIO_DFDT_04_SEC12:
-	mov ah,DIO_DriveType_3_5_1440KB
-	mov _DIO_DriveType,ah
-	jmp DIO_DFDT_END
-
-DIO_DFDT_04_SEC09:
-	mov ah,DIO_DriveType_3_5_720KB
-	mov _DIO_DriveType,ah
-	jmp DIO_DFDT_END
-
-DIO_DFDT_UNKNOWN:
-	mov ah,DIO_DriveType_UNKNOWN
-	mov _DIO_DriveType,ah		
-
-DIO_DFDT_END:
-	pop ax							; restore registers
-	pop bx
-	pop cx
-	pop dx	
-	ret
-_DIO_DETECT_FD_TYPE ENDP
-
-;----
-; _DIO_DETECT_MEDIA_TYPE
-; Detect the type of media currently in the dirive.
-; Inputs:
-;   dl = drive number
-; Output: 
-;	_DIO_MediaType will have a number with the type
-; Destroys: none
-;----
-PUBLIC _DIO_DETECT_MEDIA_TYPE
-_DIO_DETECT_MEDIA_TYPE PROC
-
-	push ax
-	push bx
-	push cx
-	                            ; set max retries
-	mov DIO_RetryCount,MAX_RETRIES
-
-DIO_DMT_Retry:
-								; Read boot sector
-	mov ch,0					; track 0
-	mov dh,0					; side/head 0
-	mov al,1					; read 1 sector
-								; data will be at DIO_DiskReadBuf
-	call _DIO_READ_SECTOR
-
-    jnc DIO_DMT_Continue        ; if successful, continue
-    
-    cmp DIO_RetryCount,0
-    je DIO_DMT_NO_MORE_RETRIES
-    
-    call _DIO_INT13H_ERROR_IS_SYS_RETRIABLE
-    cmp al,01h
-    je DIO_DMT_Setup_Retry
-    
-    call _DIO_INT13H_ERROR_IS_USER_RETRIABLE
-    cmp al,01h
-    je DIO_DMT_USER_RET_ERROR
-    
-    jmp DIO_DMT_FATAL_ERROR  
-    
-DIO_DMT_Setup_Retry:
-    dec DIO_RetryCount
-    jmp DIO_DMT_Retry
-    
-DIO_DMT_Continue:
-	
-	lea di,DIO_DiskReadBuf		; align di with the read buffer
-	mov ax,di[13h]				; copy to ax the total number of sectors
-
-	cmp ax,02d0h				; 02d0h (720 total sectors)
-	je DIO_DMT_360KB
-
-	cmp ax,0960h				; 0960h (2400 total sectors)
-	je DIO_DMT_1220KB
-
-	cmp ax,05a0h				; 05a0h (1440 total sectors)
-	je DIO_DMT_720KB
-	
-	cmp ax,0b40h				; 0b40h (2880 total sectors)
-	je DIO_DMT_1440KB
-
-	cmp ax,1680h				; 0b40h (5760 total sectors)
-	je DIO_DMT_2880KB
-	
-	jmp DIO_DMT_UNKNOWN
-
-DIO_DMT_NO_MORE_RETRIES:
-    call _DIO_INT13H_ERROR_IS_USER_RETRIABLE
-    cmp al,01h
-    je DIO_DMT_USER_RET_ERROR
-    
-    jmp DIO_DMT_FATAL_ERROR  
-
-DIO_DMT_360KB:
-	mov al,DIO_MediaType_360K
-	mov _DIO_MediaType,al
-	jmp DIO_DMT_End
-
-DIO_DMT_1220KB:
-	mov al,DIO_MediaType_1200K
-	mov _DIO_MediaType,al
-	jmp DIO_DMT_End
-
-DIO_DMT_720KB:
-	mov al,DIO_MediaType_720K
-	mov _DIO_MediaType,al	
-	jmp DIO_DMT_End
-
-DIO_DMT_1440KB:
-	mov al,DIO_MediaType_1440K
-	mov _DIO_MediaType,al	
-	jmp DIO_DMT_End
-
-DIO_DMT_2880KB:
-	mov al,DIO_MediaType_2880K
-	mov _DIO_MediaType,al	
-	jmp DIO_DMT_End
-	
-DIO_DMT_UNKNOWN:	
-	mov al,DIO_MediaType_UNKNOWN
-	mov _DIO_MediaType,al		
-	jmp DIO_DMT_End
-	
-DIO_DMT_USER_RET_ERROR:	
-	mov al,DIO_MediaType_USR_RET_ERROR
-	mov _DIO_MediaType,al		
-	jmp DIO_DMT_End
-
-DIO_DMT_FATAL_ERROR:	
-	mov al,DIO_MediaType_FATAL_ERROR
-	mov _DIO_MediaType,al	
-
-DIO_DMT_End:
-	pop cx
-	pop bx
-	pop ax
-	ret
-_DIO_DETECT_MEDIA_TYPE ENDP
 
 END

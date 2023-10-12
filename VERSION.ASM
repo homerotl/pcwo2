@@ -8,5 +8,5 @@
 
 .DATA
 	PUBLIC _VER_VersionLbl
-    _VER_VersionLbl db 1ch, 18h, BACKGROUND_STYLE, '20231008.1$'
+    _VER_VersionLbl db 1ch, 18h, BACKGROUND_STYLE, '20231011.1$'
  END
