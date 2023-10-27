@@ -54,7 +54,7 @@
     .8086
 	JUMPS
 
-	EXTRN _TOSTRING:PROC				 	         ; From LIB/STRINGS.ASM	
+	EXTRN _STR_CHAR_TO_STRING:PROC				 	 ; From LIB/STRINGS.ASM	
 	EXTRN _STR_PROGRESS_CALC:PROC
 	EXTRN _DIO_READ_SECTOR:PROC                      ; From LIB/DISK_IO.ASM
 	EXTRN _DIO_RESET_DISK_SYSTEM:PROC	
@@ -290,8 +290,8 @@ ChangeSide:
 	push ax
 	
 	mov ah,ch					; put the track on ah for converting to string
-	call _TOSTRING				; convert the value in ah to an ASCII decimal string
-		
+	call _STR_CHAR_TO_STRING	; convert the value in ah to an ASCII decimal string
+	
 	lea si,_NumToAsciiB	; String to show
 	call _UI_PRINT_TRACK_NUM
 
@@ -323,7 +323,7 @@ TF_READ_TEST ENDP
 ; Destroys: none
 ;----
 PRINT_ERROR_CODE PROC           ; TODO: Concatenate error message
-	call _TOSTRING				; convert the value in ah to an ASCII decimal string
+	call _STR_CHAR_TO_STRING	; convert the value in ah to an ASCII decimal string
 	lea si,_NumToAsciiB
     call _UI_SET_STATUS
 	ret

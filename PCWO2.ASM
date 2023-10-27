@@ -11,6 +11,7 @@
 	F2_KEY_SCAN_CODE               EQU 3ch
 	F3_KEY_SCAN_CODE               EQU 3dh
 	F4_KEY_SCAN_CODE               EQU 3eh
+	F5_KEY_SCAN_CODE               EQU 3fh	
 	F10_KEY_SCAN_CODE              EQU 44h
 	
 .STACK 100h
@@ -33,6 +34,8 @@
         dw  OFFSET _TEXT:_SCREEN_GEOMETRY_TEST
         db  F4_KEY_SCAN_CODE
         dw  OFFSET _TEXT:_TEST_PC_SPEAKER
+        db  F5_KEY_SCAN_CODE
+        dw  OFFSET _TEXT:_TEST_BENCHMARK_CPU
         db  0                                   ; End of table
         	
 .CODE
@@ -50,7 +53,8 @@
 	EXTRN _SCREEN_GEOMETRY_TEST:PROC            ; From T_SCREEN.ASM 
     EXTRN _TEST_FLOPPY:PROC                     ; From T_FLOPPY.ASM
     EXTRN _TEST_CPU_FPU_DETECTION:PROC          ; From T_CPU_FPU.ASM
-        
+    EXTRN _TEST_BENCHMARK_CPU:PROC
+            
     EXTRN _KB_READ_KEY:PROC                     ; From LIB/KB.ASM
     
 MAIN PROC										; Main program

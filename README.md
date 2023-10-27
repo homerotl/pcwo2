@@ -19,13 +19,14 @@ this project is my pretext to learn it.
  * Floppy drive identification and read test
  * PC Speaker test with music
  * Screen geometry test (MCGA 320x200)
+ * CPU Benchmark based on prime number calculations
 
 ## Usage
 The program is portable. No installation is needed. Just copy the `PCWO2.EXE` 
 file and run it from the command line. Follow the instructions.
 
 ## Binary
-Use the following [link](http://homerotl.com/downloads/pcwo2/PCWO2-20231002.1.zip) to download the 
+Use the following [link](http://homerotl.com/downloads/pcwo2/PCWO2-20231026.1.zip) to download the 
 latest public build of this program. 
 
 ## Compiling PCWO2
@@ -37,7 +38,6 @@ file `PCWO2.EXE`
 
 ## Future Test ideas
 
-  * CPU speed test (benchmark)
   * Math Co-processor test (benchmark)
   * Hard drive detection
   * CD-ROM / DVD-ROM detection and test

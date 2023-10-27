@@ -97,7 +97,7 @@ _TIME_START_TIMER PROC
 _TIME_START_TIMER ENDP
 
 ;----
-; _TIME_START_TIMER 
+; _TIME_HAS_TIMER_EXPIRED 
 ; 
 ; Inputs: None 
 ; Output: None

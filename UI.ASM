@@ -24,6 +24,8 @@
 
 	CPU_ID_COL				EQU 05h
     CPU_ID_ROW				EQU 04h
+    CPU_BENCH_COL			EQU 21h
+    CPU_BENCH_ROW			EQU 04h
 	FPU_ID_COL				EQU 05h
     FPU_ID_ROW				EQU 05h
 
@@ -69,20 +71,26 @@
 	ProgressChar                db '=$'
     PCSpeakerTestPlaying		db 'PC Speaker music playing..$'
    	PressAnyKeyToStop			db 'Press any key to stop$'
+   	TestingCPUMsg				db 'Testing CPU...$'
+   	NoValue						db '-----$'
+
    	
 								;     X,   Y, Attribute  , String
-   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2 - by Homero Trevino$'
+   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2  -  by Homero Trevino   $'
 								db	01h, 03h, LABEL_STYLE,	'Information$'
 								db	01h, 04h, LABEL_STYLE,	'CPU$'
 								db	01h, 05h, LABEL_STYLE,	'FPU$'
 								db	13h, 04h, LABEL_STYLE,	'CPU Benchmark$'
-								db	13h, 05h ,LABEL_STYLE,	'FPU Benchmark$'
+								db	13h, 05h ,LABEL_STYLE,	    'FPU Benchmark$'
+								db	21h, 04h ,DYN_INFO_STYLE, '-----$'	
+								db	21h, 05h ,DYN_INFO_STYLE, '-----$'							
 								db	0ffh ; End of data
     							
 								;	  X,   Y, Enabled, String
 	Buttons						db	01h, 07h,     01h, '[F2] Floppy Test  $'
 								db	01h, 09h,     01h, '[F3] Video Test   $'
 								db	01h, 0Bh,     01h, '[F4] Speaker Test $'
+								db	14h, 07h,     01h, '[F5] CPU Benchmark$'
 								db	01h, 17h,     01h, '[F10] Exit$'
 								db	0ffh ; End of data
 
@@ -547,6 +555,22 @@ _UI_PRINT_CPU_ID PROC
 _UI_PRINT_CPU_ID ENDP
 
 ;----
+; _UI_PRINT_CPU_BENCHMARK
+; Print the CPU ID
+; Inputs: SI has the label to display
+; Output: None
+; Destroys: None
+;----
+PUBLIC _UI_PRINT_CPU_BENCHMARK
+_UI_PRINT_CPU_BENCHMARK PROC    
+	mov _SCRN_Attribute,DYN_INFO_STYLE	
+	mov _SCRN_Position_X,CPU_BENCH_COL
+	mov _SCRN_Position_Y,CPU_BENCH_ROW
+	call _SCRN_PRINT_TEXT
+	ret
+_UI_PRINT_CPU_BENCHMARK ENDP
+
+;----
 ; _UI_PRINT_FPU_ID
 ; Print the FPU ID
 ; Inputs: SI has the label to display
@@ -557,7 +581,7 @@ PUBLIC _UI_PRINT_FPU_ID
 _UI_PRINT_FPU_ID PROC
 	mov _SCRN_Attribute,DYN_INFO_STYLE	
 	mov _SCRN_Position_X,FPU_ID_COL
-	mov _SCRN_Position_Y,FPU_ID_ROW			; Move cursor down
+	mov _SCRN_Position_Y,FPU_ID_ROW
 	call _SCRN_PRINT_TEXT
 	ret
 _UI_PRINT_FPU_ID ENDP
@@ -608,5 +632,20 @@ _UI_PROMPT_PCSPKR_PLAYING PROC
     
     ret
 _UI_PROMPT_PCSPKR_PLAYING ENDP
+
+PUBLIC _UI_SET_CPU_BENCH_TEST_MSG
+_UI_SET_CPU_BENCH_TEST_MSG PROC
+	
+	lea si,TestingCPUMsg
+	call _UI_SET_STATUS
+	
+	lea si,NoValue
+	mov _SCRN_Attribute,DYN_INFO_STYLE	
+	mov _SCRN_Position_X,CPU_BENCH_COL
+	mov _SCRN_Position_Y,CPU_BENCH_ROW
+	call _SCRN_PRINT_TEXT
     
+	ret
+_UI_SET_CPU_BENCH_TEST_MSG ENDP
+
 END
