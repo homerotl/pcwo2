@@ -7,17 +7,20 @@
 .DATA  
 
 	PUBLIC _NumToAsciiB
-	_NumToAsciiB  db '   $'
+	_NumToAsciiB		db '   $'
+	
+	PUBLIC _IntToStringBuffer
+	_IntToStringBuffer	db '     $'
 	
 	PUBLIC _CRLF
-	_CRLF		 db 13,10,'$' 
+	_CRLF				db 13,10,'$' 
 	
 .CODE
 	.8086
 	JUMPS
 	
 ;----
-; TOSTRING 
+; _STR_CHAR_TO_STRING 
 ; Converts the value in ah to a decimal string. Only 8-bit unsigned int.
 ; Inputs:
 ; 	- ah = the value to conver to decimal 
@@ -25,42 +28,89 @@
 ;	- NumToAsciiB contains the decimal string.
 ; Destroys: None
 ;----
-PUBLIC _TOSTRING
-_TOSTRING PROC NEAR				; Assuming the value we want to convert is in ah
+PUBLIC _STR_CHAR_TO_STRING
+_STR_CHAR_TO_STRING PROC NEAR	; Assuming the value we want to convert is in ah
 
-	lea di,_NumToAsciiB 			; Point di to the buffer where we are going to write number		
+	lea di,_NumToAsciiB			; Point di to the buffer where we are going to write number		
 
 	push ax						; we are going to use these registers, so save them
-	push bx			
-
+	push bx
+	
 	mov bl,20h					; Reset buffer with blank space char (20h)
-	mov [di],bl	
-	mov [di+1],bl	
-	mov [di+2],bl	
+	mov [di],bl
+	mov [di+1],bl
+	mov [di+2],bl
 
 	add di,2					; start from the back, move index to position 2
-
+	
 	mov bl,0ah					; prep to divide by 10 (0ah)
 	mov al,ah					; Prep AX
 
-NumToAsciiLoop:
+STR_CTS_Loop:
 	mov ah,0					; Prep AX
 	div bl						; We divide ax/bl. al has the quotient and ah has the reminder
 	add ah,30h					; Make ah ASCII
 	mov [di],ah					; Copy the ASCII value to the buffer
 	dec di						; increment the index for the buffer
 	cmp al,0					; if the quotient is 0, we are done				
-	je NumToAsciiDone			;
-	jmp NumToAsciiLoop			; repeat
-
-NumToAsciiDone:
+	je STR_CTS_Done
+	jmp STR_CTS_Loop			; repeat
 	
+STR_CTS_Done:
+
 	pop bx						; Restore registers
 	pop ax						
-	
-	ret
-_TOSTRING ENDP
 
+	ret
+_STR_CHAR_TO_STRING ENDP
+
+;----
+; _STR_INT_TO_STRING 
+; Converts the value in ah to a decimal string. Only 8-bit unsigned int.
+; Inputs:
+; 	- ax = the value to conver to decimal 
+; Output: 
+;	- _IntToStringBuffer contains the decimal string.
+; Destroys: None
+;----
+PUBLIC _STR_INT_TO_STRING
+_STR_INT_TO_STRING PROC NEAR	; Assuming the value we want to convert is in ah
+
+	lea di,_IntToStringBuffer	; Point di to the buffer where we are going to write number		
+
+	push ax						; we are going to use these registers, so save them
+	push bx	
+	push dx
+	
+	mov bl,20h					; Reset buffer with blank space char (20h)
+	mov [di],bl
+	mov [di+1],bl
+	mov [di+2],bl
+	mov [di+3],bl
+	mov [di+4],bl
+
+	add di,4					; start from the back, move index to position 4
+	
+	mov bx,000ah				; prep to divide by 10 (0ah)
+
+_STR_ITS_Loop:
+	mov dx,0
+	div bx						; We divide AX/BX. AX has the quotient and DX has the reminder
+	add dl,30h					; Make ah ASCII
+	mov [di],dl					; Copy the ASCII value to the buffer
+	dec di						; increment the index for the buffer
+	cmp ax,0					; if the quotient is 0, we are done				
+	je _STR_ITS_Done			;
+	jmp _STR_ITS_Loop			; repeat
+	
+_STR_ITS_Done:
+
+	pop dx
+	pop bx						; Restore registers
+	pop ax						
+
+	ret
+_STR_INT_TO_STRING ENDP
 
 ;----
 ; _PROGRESS_CALC 
