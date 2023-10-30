@@ -6,6 +6,7 @@
 
 .DATA
 	
+	; These are $ terminated because they are for use with Int 21h
     CommLineErrorMsg			db 'ERROR: Invalid command line option',13,10,'$' 
 
     SyntaxMsg					db 'Syntax:',13,10

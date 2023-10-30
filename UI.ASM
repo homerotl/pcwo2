@@ -61,37 +61,38 @@
 	
 	FDTestBaseRow               db 0
 
-    GoodbyeMsg					db 'Goodbye!',13,10,'$' 
+	; For Int 21h usage
+    GoodbyeMsg					db 'Goodbye!',13,10,'$' 	
 
-	DriveTypeNMediaMsg	        db 'Drive                Media$' 
-	DriveReadTestMsg	        db 'Reading Test [          ] Track$' 
-	BlankStatusMsg              db '                           $'
-    MediaNotPresentMsg          db 'Media not present$'
-    RetrySkipMsg                db '[ENTER] retry  [ESC] skip  $'
-	ProgressChar                db '=$'
-    PCSpeakerTestPlaying		db 'PC Speaker music playing..$'
-   	PressAnyKeyToStop			db 'Press any key to stop$'
-   	TestingCPUMsg				db 'Testing CPU...$'
-   	NoValue						db '-----$'
+	DriveTypeNMediaMsg	        db 'Drive                Media', 0 
+	DriveReadTestMsg	        db 'Reading Test [          ] Track', 0 
+	BlankStatusMsg              db '                           ', 0
+    MediaNotPresentMsg          db 'Media not present', 0
+    RetrySkipMsg                db '[ENTER] retry  [ESC] skip  ', 0
+	ProgressChar                db '=', 0
+    PCSpeakerTestPlaying		db 'PC Speaker music playing..', 0
+   	PressAnyKeyToStop			db 'Press any key to stop', 0
+   	TestingCPUMsg				db 'Testing CPU...', 0
+   	NoValue						db '-----', 0
 
    	
 								;     X,   Y, Attribute  , String
-   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2  -  by Homero Trevino   $'
-								db	01h, 03h, LABEL_STYLE,	'Information$'
-								db	01h, 04h, LABEL_STYLE,	'CPU$'
-								db	01h, 05h, LABEL_STYLE,	'FPU$'
-								db	13h, 04h, LABEL_STYLE,	'CPU Benchmark$'
-								db	13h, 05h ,LABEL_STYLE,	    'FPU Benchmark$'
-								db	21h, 04h ,DYN_INFO_STYLE, '-----$'	
-								db	21h, 05h ,DYN_INFO_STYLE, '-----$'							
+   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2  -  by Homero Trevino   ', 0
+								db	01h, 03h, LABEL_STYLE,	'Information', 0
+								db	01h, 04h, LABEL_STYLE,	'CPU', 0
+								db	01h, 05h, LABEL_STYLE,	'FPU', 0
+								db	13h, 04h, LABEL_STYLE,	'CPU Benchmark', 0
+								db	13h, 05h ,LABEL_STYLE,	    'FPU Benchmark', 0
+								db	21h, 04h ,DYN_INFO_STYLE, '-----', 0	
+								db	21h, 05h ,DYN_INFO_STYLE, '-----', 0							
 								db	0ffh ; End of data
     							
 								;	  X,   Y, Enabled, String
-	Buttons						db	01h, 07h,     01h, '[F2] Floppy Test  $'
-								db	01h, 09h,     01h, '[F3] Video Test   $'
-								db	01h, 0Bh,     01h, '[F4] Speaker Test $'
-								db	14h, 07h,     01h, '[F5] CPU Benchmark$'
-								db	01h, 17h,     01h, '[F10] Exit$'
+	Buttons						db	01h, 07h,     01h, '[F2] Floppy Test  ', 0
+								db	01h, 09h,     01h, '[F3] Video Test   ', 0
+								db	01h, 0Bh,     01h, '[F4] Speaker Test ', 0
+								db	14h, 07h,     01h, '[F5] CPU Benchmark', 0
+								db	01h, 17h,     01h, '[F10] Exit', 0
 								db	0ffh ; End of data
 
 .CODE		
@@ -160,7 +161,7 @@ _UIS_PrintAllLabels:
 	inc si
 	call _SCRN_PRINT_TEXT
 _UIS_LookForEndOfLabel:
-	cmp byte ptr [si],'$'
+	cmp byte ptr [si],0
 	je _UIS_FoundEndOfLabel
 	inc si
 	jmp _UIS_LookForEndOfLabel
@@ -174,7 +175,7 @@ RENDER_LABELS ENDP
 ;----
 ; _UI_SET_STATUS
 ; Display text in the status area
-; Inputs: si points to the text to display. Must be $ terminated.
+; Inputs: si points to the text to display. Must be null terminated.
 ; Output: none
 ; Destroys: none
 ;----
@@ -190,7 +191,7 @@ _UI_SET_STATUS ENDP
 ;----
 ; _UI_SET_PROMPT
 ; Display text in the prompt area
-; Inputs: si points to the text to display. Must be $ terminated.
+; Inputs: si points to the text to display. Must be null terminated.
 ; Output: none
 ; Destroys: none
 ;----
@@ -280,7 +281,7 @@ _UI_DRIVE_TEST_TITLES ENDP
 ; Display the value for drive type
 ; Inputs: 
 ;  - _UI_Drive_Index
-;  - si points to the text to display. Must be $ terminated.
+;  - si points to the text to display. Must be null terminated.
 ; Output: none
 ; Destroys: none
 ;----
@@ -306,7 +307,7 @@ _UI_ADD_FD_TYPE_VALUE ENDP
 ; Display the value for media type
 ; Inputs: 
 ;  - _UI_Drive_Index
-;  - si points to the text to display. Must be $ terminated.
+;  - si points to the text to display. Must be null terminated.
 ; Output: none
 ; Destroys: none
 ;----
@@ -403,7 +404,7 @@ _UI_DISPLAY_FD_PROGRESS ENDP
 ; Display drive test status message
 ; Inputs: 
 ;  - _UI_Drive_Index
-;  - si points to a string '$' terminated of 10 chars
+;  - si points to a string, null terminated of 10 chars
 ; Output: none
 ; Destroys: none
 ;----
@@ -526,7 +527,7 @@ _UIS_RenderAllButtons:
 	mov _SCRN_Attribute,MENU_OPTION_STYLE_EN	; Copy color attribute
 	call _SCRN_PRINT_TEXT
 _UIS_LookForEndOfString:
-	cmp byte ptr [si],'$'
+	cmp byte ptr [si],0
 	je _UIS_FoundEndOfString
 	inc si
 	jmp _UIS_LookForEndOfString

@@ -126,7 +126,7 @@ _SCRN_DISABLE_BLINKING_TEXT ENDP
 
 ;----
 ; _SCRN_PRINT_TEXT
-; Print text on the screen using the parameters provided. 
+; Print a null-terminated string to the screen using the parameters provided. 
 ; Assume DS is already pointing to the data segment and SI has the effective address
 ; data segment
 ; Inputs:
@@ -160,7 +160,7 @@ _SCRN_PRINT_TEXT PROC
 	
 pt_loop:
 	mov cl,[si]					; Copy character from the source
-	cmp cl,'$'					; While ref[si]!='$' {
+	cmp cl,0					; While ref[si]!=null {
 	je pt_end
 	
 	mov es:[di],cl				; Copy character

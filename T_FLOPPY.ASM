@@ -17,32 +17,32 @@
 	EXTRN _UI_Enter_Esc_Diag_Resp:BYTE
 	EXTRN _NumToAsciiB:BYTE			 ; From LIB/STRINGS.ASM
 	
-	StatusEnumDrivesMsg	db 'Counting drives...$' 		
-	StatusDetDrTypeMsg  db 'Detect drive type...$' 
-	StatusDetMedTypeMsg db 'Detect media type...$' 
-	StatusReadTestMsg   db 'Surface read test...$'
-	RetryMsgQ      		db 'Would you like to retry? (Y/N)$'
-	NoFloppyDrivesMsg	db 'No drives detected$'
+	StatusEnumDrivesMsg	db 'Counting drives...', 0 		
+	StatusDetDrTypeMsg  db 'Detect drive type...', 0 
+	StatusDetMedTypeMsg db 'Detect media type...', 0 
+	StatusReadTestMsg   db 'Surface read test...', 0
+	RetryMsgQ      		db 'Would you like to retry? (Y/N)', 0
+	NoFloppyDrivesMsg	db 'No drives detected', 0
 
-	DDT_0				db '5.25"-360KB$'
-	DDT_1				db '5.25"-1.2MB$'
-	DDT_2				db '3.5"-720KB$'
-	DDT_3				db '3.5"-1.44MB$'
-	DDT_4				db '3.5"-2.88MB$'
-	DDT_UK				db 'Unknown$'
+	DDT_0				db '5.25"-360KB', 0
+	DDT_1				db '5.25"-1.2MB', 0
+	DDT_2				db '3.5"-720KB', 0
+	DDT_3				db '3.5"-1.44MB', 0
+	DDT_4				db '3.5"-2.88MB', 0
+	DDT_UK				db 'Unknown', 0
 
-	DMT_0				db '360KB$'
-	DMT_1				db '1.2MB$'
-	DMT_2				db '720KB$'
-	DMT_3				db '1.44MB$'
-	DMT_4				db '2.88MB$'
-	DMT_UNKNOWN			db 'Unknown$'
-	DMT_EMPTY           db 'Empty$'
-	DMT_FATAL_ERROR     db 'Error$'
+	DMT_0				db '360KB', 0
+	DMT_1				db '1.2MB', 0
+	DMT_2				db '720KB', 0
+	DMT_3				db '1.44MB', 0
+	DMT_4				db '2.88MB', 0
+	DMT_UNKNOWN			db 'Unknown', 0
+	DMT_EMPTY           db 'Empty', 0
+	DMT_FATAL_ERROR     db 'Error', 0
 	
-	FDTestSuccess       db 'Success!  $'
-	FDTestFail          db 'Test Fail $'
-	FDTestAbort         db 'Aborted   $'
+	FDTestSuccess       db 'Success!  ', 0
+	FDTestFail          db 'Test Fail ', 0
+	FDTestAbort         db 'Aborted   ', 0
 	
 	ReadRetries    		db 0
 	CurrentDriveIndex 	db 0

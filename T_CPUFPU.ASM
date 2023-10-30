@@ -19,19 +19,19 @@
 	EXTRN _TimerTimeLapse:BYTE					; From LIB/TIME.ASM
 	EXTRN _TimerTimerExpired:BYTE
 	
-	CPU8086Lbl					db '8086/8088    $'
-	CPU286Lbl					db '80286        $'	
-	CPU386Lbl					db '80386        $'
-	CPU486Lbl					db '80486        $'			
-	CPUPentiumLbl				db 'Pentium      $'	
-	CPUPentiumProLbl			db 'PentiumPro   $'		
-	CPUUnknownLbl				db 'Unknown      $'
+	CPU8086Lbl					db '8086/8088    ', 0
+	CPU286Lbl					db '80286        ', 0	
+	CPU386Lbl					db '80386        ', 0
+	CPU486Lbl					db '80486        ', 0			
+	CPUPentiumLbl				db 'Pentium      ', 0	
+	CPUPentiumProLbl			db 'PentiumPro   ', 0		
+	CPUUnknownLbl				db 'Unknown      ', 0
 	
-	FPUNoLbl					db 'Not present  $'
-	FPUPresentLbl				db 'Present      $'
-	FPU287Lbl					db '287          $'
-	FPU387Lbl					db '387          $'
-	FPUUnknownLbl				db 'Unknown      $'
+	FPUNoLbl					db 'Not present  ', 0
+	FPUPresentLbl				db 'Present      ', 0
+	FPU287Lbl					db '287          ', 0
+	FPU387Lbl					db '387          ', 0
+	FPUUnknownLbl				db 'Unknown      ', 0
 	
 .CODE
 	.8086
@@ -67,7 +67,7 @@ _TEST_CPU_FPU_DETECTION PROC
 	
 	call _get_cpu_type
 	call _get_fpu_type
-		
+
 	cmp _cpu_type,0
 	je otd_8086
 	

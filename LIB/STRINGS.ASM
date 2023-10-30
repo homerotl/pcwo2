@@ -7,11 +7,12 @@
 .DATA  
 
 	PUBLIC _NumToAsciiB
-	_NumToAsciiB		db '   $'
+	_NumToAsciiB		db '   ', 0
 	
 	PUBLIC _IntToStringBuffer
-	_IntToStringBuffer	db '     $'
+	_IntToStringBuffer	db '     ',0
 	
+	; This one is $ terminated because it is for INT 21h usage
 	PUBLIC _CRLF
 	_CRLF				db 13,10,'$' 
 	
