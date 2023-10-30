@@ -54,11 +54,23 @@ STR_CTS_Loop:
 	mov [di],ah					; Copy the ASCII value to the buffer
 	dec di						; increment the index for the buffer
 	cmp al,0					; if the quotient is 0, we are done				
-	je STR_CTS_Done
+	je STR_CTS_Trim
 	jmp STR_CTS_Loop			; repeat
 	
-STR_CTS_Done:
+STR_CTS_Trim:
 
+	lea di,_NumToAsciiB
+	cmp BYTE PTR [di],20h
+	jne STR_CTS_Done
+
+	mov bl,[di+1]
+	mov [di],bl
+	mov bl,[di+2]
+	mov [di+1],bl
+	mov BYTE PTR [di+2],0
+	jmp STR_CTS_Trim
+
+STR_CTS_Done:
 	pop bx						; Restore registers
 	pop ax						
 
@@ -94,18 +106,34 @@ _STR_INT_TO_STRING PROC NEAR	; Assuming the value we want to convert is in ah
 	
 	mov bx,000ah				; prep to divide by 10 (0ah)
 
-_STR_ITS_Loop:
+STR_ITS_Loop:
 	mov dx,0
 	div bx						; We divide AX/BX. AX has the quotient and DX has the reminder
 	add dl,30h					; Make ah ASCII
 	mov [di],dl					; Copy the ASCII value to the buffer
 	dec di						; increment the index for the buffer
 	cmp ax,0					; if the quotient is 0, we are done				
-	je _STR_ITS_Done			;
-	jmp _STR_ITS_Loop			; repeat
+	je STR_ITS_Trim				;
+	jmp STR_ITS_Loop			; repeat
 	
-_STR_ITS_Done:
+STR_ITS_Trim:
+	lea di,_IntToStringBuffer
+	cmp BYTE PTR [di],20h
+	jne STR_ITS_Done
+	
+	mov bl,[di+1]
+	mov [di],bl
+	mov bl,[di+2]
+	mov [di+1],bl
+	mov bl,[di+3]
+	mov [di+2],bl
+	mov bl,[di+4]
+	mov [di+3],bl
+	mov BYTE PTR [di+4],0
+	
+	jmp STR_ITS_Trim
 
+STR_ITS_Done:
 	pop dx
 	pop bx						; Restore registers
 	pop ax						
