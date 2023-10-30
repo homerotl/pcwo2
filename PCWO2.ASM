@@ -56,6 +56,7 @@
     EXTRN _TEST_BENCHMARK_CPU:PROC
             
     EXTRN _KB_READ_KEY:PROC                     ; From LIB/KB.ASM
+    EXTRN _KB_FLUSH_BUFFER:PROC
     
 MAIN PROC										; Main program
 
@@ -103,6 +104,9 @@ DISPATCHER PROC
     push dx
     
 dis_loop:
+    
+    call _KB_FLUSH_BUFFER                       ; Flush KB buffer
+        
     call _KB_READ_KEY                           ; Read a character into ax
     or ah,ah                                    ; ax = -1 if no charcter read, 1 for
                                                 ; extended code

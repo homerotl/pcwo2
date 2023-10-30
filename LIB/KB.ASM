@@ -128,5 +128,20 @@ kb_enter_esc_end:
     ret   
 _KB_ENTER_ESC_Q ENDP
 
+;----
+; _KB_FLUSH_BUFFER 
+; Flush the KB buffer, and nothing else
+; Inputs: None
+; Output: None
+; Destroys: None
+;----
+PUBLIC _KB_FLUSH_BUFFER
+_KB_FLUSH_BUFFER PROC
+	push ax
+	mov ax,0cffh						; Int 21h function 0ch - flush kb buffer
+	int 21h
+	pop ax
+	ret
+_KB_FLUSH_BUFFER ENDP
 
 END
