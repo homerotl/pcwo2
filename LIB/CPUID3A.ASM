@@ -1,5 +1,5 @@
 ;
-; I found this code online for as the specification from
+; I found this code online as the specification from
 ; Intel on how to detect the CPU. I am leaving all original 
 ; comments and the Copyright notice.
 ;
@@ -116,8 +116,8 @@ check_8086:
 	popf					; replace current FLAGS value
 	pushf					; get new FLAGS
 	pop ax					; store new FLAGS in AX
-	and ax,0f00h			; if bits 12-15 are set, then
-	cmp ax,0f00h			; processor is an 8086/8080
+	and ax,0f000h			; if bits 12-15 are set, then
+	cmp ax,0f000h			; processor is an 8086/8080
 	mov _cpu_type,0			; turn on 8086/8080 flag
 	jne check_80286			; go check for 80286
 	push sp					; double check with push sp
