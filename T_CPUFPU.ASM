@@ -68,9 +68,6 @@ _TEST_CPU_FPU_DETECTION PROC
 	call _get_cpu_type
 	call _get_fpu_type
 
-	mov _cpu_type,0
-	mov _fpu_type,0
-
 	cmp _cpu_type,0
 	je otd_8086
 	
