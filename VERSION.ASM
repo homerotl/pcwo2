@@ -8,6 +8,6 @@
 
 .DATA
 	PUBLIC _VER_VersionLbl
-    _VER_VersionLbl db 1ch, 18h, BACKGROUND_STYLE, '20231031.1',0
+    _VER_VersionLbl db 1ch, 18h, BACKGROUND_STYLE, '20231101.1',0
     			    db 0ffh ; End of data
  END

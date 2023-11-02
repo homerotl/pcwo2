@@ -19,19 +19,23 @@
 	EXTRN _TimerTimeLapse:BYTE					; From LIB/TIME.ASM
 	EXTRN _TimerTimerExpired:BYTE
 	
-	CPU8086Lbl					db '8086/8088    ', 0
-	CPU286Lbl					db '80286        ', 0	
-	CPU386Lbl					db '80386        ', 0
-	CPU486Lbl					db '80486        ', 0			
-	CPUPentiumLbl				db 'Pentium      ', 0	
-	CPUPentiumProLbl			db 'PentiumPro   ', 0		
-	CPUUnknownLbl				db 'Unknown      ', 0
+	CPUIDNameTable				db 0, '8086/8088 ', 0
+								db 2, '80286     ', 0
+								db 3, '80386     ', 0
+								db 4, '80486     ', 0	
+								db 5, 'Pentium   ', 0	
+								db 6, 'PentiumPro', 0
+								db 10,'Unknown   ', 0
+								db 0ffh						; Table terminator
 	
-	FPUNoLbl					db 'Not present  ', 0
-	FPUPresentLbl				db 'Present      ', 0
-	FPU287Lbl					db '287          ', 0
-	FPU387Lbl					db '387          ', 0
-	FPUUnknownLbl				db 'Unknown      ', 0
+	FPUNameTable				db 0,'Not present', 0
+								db 1,'Present    ', 0
+								db 2,'287        ', 0
+								db 3,'387        ', 0						
+								db 0ffh						; Table terminator
+
+	CPUUnknownLbl				db 'Unknown', 0	
+	FPUUnknownLbl				db 'Unknown', 0
 	
 .CODE
 	.8086
@@ -64,92 +68,60 @@
 ;----
 PUBLIC _TEST_CPU_FPU_DETECTION
 _TEST_CPU_FPU_DETECTION PROC
+	push ax									; Save registers we will use
+	push si
+	push di
 	
-	call _get_cpu_type
-	call _get_fpu_type
+	call _get_cpu_type						; Get CPU type
+	mov al, _cpu_type						; put it on al
+	
+	lea si, CPUUnknownLbl					; Get ref to default label
+	lea di, CPUIDNameTable					; Get cpu table ref
 
-	cmp _cpu_type,0
-	je otd_8086
+T_CPU_Next:	
+	cmp byte ptr [di],0ffh					; Check if we are at the end of the table
+	je T_FPU								; Go to FPU detection
 	
-	cmp _cpu_type,2
-	je otd_286
+	cmp byte ptr [di],al					; Check if we found a matching entry on the table
+	je T_CPU_Match							; yes, jump
 	
-	cmp _cpu_type,3
-	je otd_386
-	
-	cmp _cpu_type,4
-	je otd_486
-	
-	cmp _cpu_type,5
-	je otd_Pentium		
-	
-	cmp _cpu_type,6
-	je otd_PentiumPro
+	add di,0ch								; no, skip on the table to the next entry
+	jmp T_CPU_Next							; jump
 
-	lea si,CPUUnknownLbl
-	jmp otd_fpu_detection
+T_CPU_Match:
+	inc di									; the labels starts on the next byte
+	mov si,di								; but we need it on si
+	
+T_FPU:
+	call _UI_PRINT_CPU_ID					; Print the CPU label
+	
+	call _get_fpu_type						; Get the FPU type
+	mov al, _fpu_type						; put it on al
+	
+	lea si, FPUUnknownLbl					; Get ref to the default label
+	lea di, FPUNameTable					; Get fpu table ref
 
-otd_8086:
-	lea si,CPU8086Lbl
-	jmp otd_fpu_detection
+T_FPU_Next:	
+	cmp byte ptr [di],0ffh					; Check if we are at the end of the table
+	je T_CPUFPU_End							; Go to the end
 	
-otd_286:
-	lea si,CPU286Lbl
-	jmp otd_fpu_detection
+	cmp byte ptr [di],al					; Check if we found a matching entry on the table
+	je T_FPU_Match							; yes, jump
+	
+	add di,0dh						; no, skip on the table to the next entry
+	jmp T_FPU_Next							; jump
 
-otd_386:
-	lea si,CPU386Lbl
-	jmp otd_fpu_detection
+T_FPU_Match:
+	inc di									; the labels starts on the next byte
+	mov si,di								; but we need it on si
 	
-otd_486:
-	lea si,CPU486Lbl
-	jmp otd_fpu_detection
-	
-otd_Pentium:
-	lea si,CPUPentiumLbl
-	jmp otd_fpu_detection
-	
-otd_PentiumPro:
-	lea si,CPUPentiumProLbl
-	jmp otd_fpu_detection
-	
-otd_fpu_detection:
+T_CPUFPU_End:
+	call _UI_PRINT_FPU_ID					; Print the FPU label
 
-    call _UI_PRINT_CPU_ID
+	pop di									; restore used registers
+	pop si
+	pop ax
 	
-	cmp _fpu_type,0
-	je otd_no_fpu
-	
-	cmp _fpu_type,1
-	je otd_fpu
-	
-	cmp _fpu_type,2
-	je otd_287
-
-	cmp _fpu_type,3
-	je otd_387
-
-	lea si,FPUUnknownLbl
-	jmp otd_end
-
-otd_no_fpu:
-	lea si,FPUNoLbl
-	jmp otd_end
-
-otd_fpu:
-	lea si,FPUPresentLbl
-	jmp otd_end
-	
-otd_287:
-	lea si,FPU287Lbl
-	jmp otd_end
-	
-otd_387:
-	lea si,FPU387Lbl
-	jmp otd_end
-		
-otd_end:
-    call _UI_PRINT_FPU_ID
 	ret
 _TEST_CPU_FPU_DETECTION ENDP
 
