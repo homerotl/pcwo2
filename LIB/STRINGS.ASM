@@ -166,4 +166,31 @@ _STR_PROGRESS_CALC PROC
 	ret
 _STR_PROGRESS_CALC ENDP
 
+;----
+; _STR_BUFFER_COPY 
+; Copy from the buffer pointed by si to di a number of bytes specified by cx
+; Inputs:
+; 	- cx - number of bytes to copy
+;   - si - source index
+;   - di - destination index
+; Output: 
+; Destroys: None
+;----
+PUBLIC _STR_BUFFER_COPY
+_STR_BUFFER_COPY PROC
+	push ax
+
+S_BC_Continue:
+
+	mov ah,[si]
+	mov [di],ah
+	inc si
+	inc di
+	loop S_BC_Continue
+	
+	pop ax
+	
+	ret
+_STR_BUFFER_COPY ENDP
+
 END

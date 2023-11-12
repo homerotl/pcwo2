@@ -5,6 +5,8 @@
 
 .MODEL small
 
+	INCLUDE VERSION.INC
+	
 ; Color schema
 
 	BACKGROUND_STYLE		EQU 07h ; White text over Black background
@@ -85,6 +87,7 @@
 								db	13h, 05h ,LABEL_STYLE,	    'FPU Benchmark', 0
 								db	21h, 04h ,DYN_INFO_STYLE, '-----', 0	
 								db	21h, 05h ,DYN_INFO_STYLE, '-----', 0							
+								db	1ch, 18h ,BACKGROUND_STYLE, VERSION_LBL, 0							
 								db	0ffh ; End of data
     							
 								;	  X,   Y, Enabled, String
@@ -136,9 +139,6 @@ _UI_SETUP PROC
 	lea si,StaticLabels	
 	call RENDER_LABELS
 	
-	lea si,_VER_VersionLbl
-	call RENDER_LABELS
-
 	pop ax
 	
 	ret
@@ -649,4 +649,6 @@ _UI_SET_CPU_BENCH_TEST_MSG PROC
 	ret
 _UI_SET_CPU_BENCH_TEST_MSG ENDP
 
+
+	
 END
