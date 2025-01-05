@@ -6,18 +6,21 @@
 .MODEL small
 
 	INCLUDE VERSION.INC
-	
+
+    DEFAULT_VIDEO_MODE      EQU 03h ; 03h is 80x25. Could be set to 01h for 40x25
+    	
 ; Color schema
 
 	BACKGROUND_STYLE		EQU 07h ; White text over Black background
-	TITLE_STYLE				EQU 0BDh ; Intense violet text over Intense cyan background
+	TITLE_STYLE				EQU 0B5h ; Violet text over Intense cyan background
 	LABEL_STYLE				EQU 05h ; Violet text over Black background
 	DYN_INFO_STYLE			EQU 07h ; White text over Black background
 	MENU_OPTION_STYLE_EN	EQU 0Dh ; Intense violet text over Black background
 	MENU_OPTION_STYLE_DI	EQU 05h ; Violet text over Black background
 	STATUS_STYLE			EQU 0Fh ; Intense white text over Black background
+
 	
-; Text mode 40x25 layout
+; Text layout
 
     STATUS_COL 				EQU 0ch
     STATUS_ROW				EQU 16h
@@ -26,11 +29,15 @@
 
 	CPU_ID_COL				EQU 05h
     CPU_ID_ROW				EQU 04h
-    CPU_BENCH_COL			EQU 21h
-    CPU_BENCH_ROW			EQU 04h
-	FPU_ID_COL				EQU 05h
-    FPU_ID_ROW				EQU 05h
+    
+    FPU_ID_COL				EQU 17h
+    FPU_ID_ROW				EQU 04h
+    
+    CPU_BENCH_RESULT_COL	EQU 03h
+    CPU_BENCH_RESULT_ROW	EQU 0ch
+    CPU_BENCH_RESULT_VA_COL	EQU 0eh
 
+	
     DRIVE_TEST_COL			EQU 03h
     DRIVE_ID_COL			EQU 0bh
     DRIVE_MEDIA_COL			EQU 1eh
@@ -41,7 +48,6 @@
 
         
 .DATA
-
 	
     EXTRN _SCRN_VideoMode:BYTE					; From LIB/SCREEN.ASM
 	EXTRN _SCRN_Attribute:BYTE		
@@ -50,6 +56,11 @@
 	EXTRN _SCRN_One_Char:BYTE
 	
 	EXTRN _VER_VersionLbl:BYTE					; From VERSION.ASM
+
+	PUBLIC _UI_DisplayMode
+	_UI_DisplayMode				db 0			; 0 = 80x25 mode
+												; 1 = 40x25 mode
+												; 2 = ? Graphical modes?
 
     PUBLIC _UI_Drive_Index		
     _UI_Drive_Index             db 0			; Index of the drive being tested (0 = a;)
@@ -74,36 +85,45 @@
 	ProgressChar                db '=', 0
     PCSpeakerTestPlaying		db 'PC Speaker music playing..', 0
    	PressAnyKeyToStop			db 'Press any key to stop', 0
+   	PressAnyKeyToContinue       db 'Press any key to continue', 0
    	TestingCPUMsg				db 'Testing CPU...', 0
-   	NoValue						db '-----', 0
-
+    BenchmarkResultMsg          db 'CPU Score:',0
+    
+	PUBLIC _BlankColStart
+	_BlankColStart				db 0
+	
+	PUBLIC BlankColEnd
+	BlankColEnd					db 0
+	
+	PUBLIC BlankRowStart
+	BlankRowStart				db 0
+	
+	PUBLIC BlankRowEnd
+	BlankRowEnd					db 0
    	
 								;     X,   Y, Attribute  , String
-   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2  -  by Homero Trevino   ', 0
-								db	01h, 03h, LABEL_STYLE,	'Information', 0
-								db	01h, 04h, LABEL_STYLE,	'CPU', 0
-								db	01h, 05h, LABEL_STYLE,	'FPU', 0
-								db	13h, 04h, LABEL_STYLE,	'CPU Benchmark', 0
-								db	13h, 05h ,LABEL_STYLE,	    'FPU Benchmark', 0
-								db	21h, 04h ,DYN_INFO_STYLE, '-----', 0	
-								db	21h, 05h ,DYN_INFO_STYLE, '-----', 0							
-								db	1ch, 18h ,BACKGROUND_STYLE, VERSION_LBL, 0							
-								db	0ffh ; End of data
+   	StaticLabels				db	01h, 01h, TITLE_STYLE,	'PC Workout v2', 0
+   								db	3eh, 01,  TITLE_STYLE,	'by Homero Trevino', 0
+   								db	01h, 03h, LABEL_STYLE,	'Information', 0
+   								db	01h, 04h, LABEL_STYLE,	'CPU', 0
+   								db	13h, 04h, LABEL_STYLE,	'FPU', 0						
+   								db	44h, 18h ,BACKGROUND_STYLE, VERSION_LBL, 0							
+   								db	0ffh ; End of data
     							
 								;	  X,   Y, Enabled, String
-	Buttons						db	01h, 07h,     01h, '[F2] Floppy Test  ', 0
-								db	01h, 09h,     01h, '[F3] Video Test   ', 0
-								db	01h, 0Bh,     01h, '[F4] Speaker Test ', 0
-								db	14h, 07h,     01h, '[F5] CPU Benchmark', 0
-								db	01h, 17h,     01h, '[F10] Exit', 0
+	Buttons						db	01h, 06h, 01h, '[F2] Floppy Test  ', 0
+								db	15h, 06h, 01h, '[F3] Video Test   ', 0
+								db	29h, 06h, 01h, '[F4] Speaker Test ', 0
+								db	3dh, 06h, 01h, '[F5] CPU Benchmark', 0
+								db	01h, 17h, 01h, '[F10] Exit', 0
 								db	0ffh ; End of data
 
 .CODE		
 	.8086
 	JUMPS
 
-    EXTRN _KB_ENTER_ESC_Q:PROC					; From LIB/KB.ASM    
-	EXTRN _SCRN_PRINT_TEXT:PROC                 ; From LIB/SCREEN.ASM
+    EXTRN _KB_ENTER_ESC_Q:PROC                      ; From LIB/KB.ASM    
+	EXTRN _SCRN_PRINT_TEXT:PROC                     ; From LIB/SCREEN.ASM
 	EXTRN _SCRN_SET_VIDEO_MODE:PROC				
 	EXTRN _SCRN_SET_BACKGROUND:PROC
 	EXTRN _SCRN_DISABLE_CURSOR:PROC
@@ -112,7 +132,26 @@
 	EXTRN _SCRN_PRINT_CHAR:PROC
 	EXTRN _SCRN_SAVE_OSCREEN:PROC
 	EXTRN _SCRN_RESTORE_OSCREEN:PROC
+
+;----
+; _UI_ENSURE_MENU_VIDEO_MODE
+; Ensure menu video mode
+; Inputs: None
+; Output: None
+; Destroys: None
+;----
+PUBLIC _UI_ENSURE_MENU_VIDEO_MODE
+_UI_ENSURE_MENU_VIDEO_MODE PROC
 	
+	mov _SCRN_VideoMode,DEFAULT_VIDEO_MODE          ; Setup text mode 3 (Text 80x25)								
+	call _SCRN_SET_VIDEO_MODE							
+	call _SCRN_DISABLE_CURSOR			 
+	call _SCRN_DISABLE_BLINKING_TEXT	
+	
+	ret
+_UI_ENSURE_MENU_VIDEO_MODE ENDP
+
+
 ;----
 ; _UI_SETUP
 ; Set the basic screen with the video mode, background, titles and basic options.
@@ -122,27 +161,42 @@
 ;----
 PUBLIC _UI_SETUP
 _UI_SETUP PROC
-	
-	push ax
+
+	push si
 	
 	call _SCRN_SAVE_OSCREEN						; Save current video mode and screen
+	
+	call _UI_ENSURE_MENU_VIDEO_MODE
 
-	mov _SCRN_VideoMode,01h								
-	call _SCRN_SET_VIDEO_MODE					; Setup text mode 1 (40x25x16)
-	
-	call _SCRN_DISABLE_CURSOR			 
-	call _SCRN_DISABLE_BLINKING_TEXT	
-	
 	mov _SCRN_Attribute,BACKGROUND_STYLE 
 	call _SCRN_SET_BACKGROUND
 
 	lea si,StaticLabels	
 	call RENDER_LABELS
 	
-	pop ax
+	pop si
 	
 	ret
 _UI_SETUP ENDP
+
+;----
+; _UI_TEARDOWN
+; Return text mode to 80x25.
+; Inputs: None
+; Output: None
+; Destroys: None
+;----
+PUBLIC _UI_TEARDOWN
+_UI_TEARDOWN PROC
+
+	call _SCRN_RESTORE_OSCREEN					; Restore original screen
+	
+	mov ah,09h									; INT 21h, Function 09h - Print string to console
+	mov dx,OFFSET GoodbyeMsg	
+	int 21h		
+	
+	ret
+_UI_TEARDOWN ENDP
 
 
 RENDER_LABELS PROC
@@ -372,7 +426,7 @@ _UI_DISPLAY_FD_PROGRESS PROC
     lea si,ProgressChar
     mov _SCRN_Attribute,DYN_INFO_STYLE   	; set style
     mov _SCRN_Position_X,FD_READ_TEST_COL	; set the column 
-											; calculate the row
+                                            ; calculate the row
 
     call FD_TEST_CALCULATE_BASE_ROW
     
@@ -448,7 +502,7 @@ _UI_PROMPT_INSERT_MEDIA PROC
     lea si,RetrySkipMsg
     call _UI_SET_PROMPT
  
- kb_pimp_retry:
+kb_pimp_retry:
    
     call _KB_ENTER_ESC_Q
 
@@ -477,26 +531,6 @@ kb_pimp_end:
     
 	ret
 _UI_PROMPT_INSERT_MEDIA ENDP
-
-;----
-; _UI_TEARDOWN
-; Return text mode to 80x25.
-; Inputs: None
-; Output: None
-; Destroys: None
-;----
-PUBLIC _UI_TEARDOWN
-_UI_TEARDOWN PROC
-
-	call _SCRN_RESTORE_OSCREEN					; Restore original screen
-	
-	mov ah,09h									; INT 21h, Function 09h - Print string to console
-	mov dx,OFFSET GoodbyeMsg	
-	int 21h		
-	
-	ret
-_UI_TEARDOWN ENDP
-
 
 ;----
 ; _UI_DISPLAY_MENU
@@ -557,18 +591,26 @@ _UI_PRINT_CPU_ID ENDP
 
 ;----
 ; _UI_PRINT_CPU_BENCHMARK
-; Print the CPU ID
-; Inputs: SI has the label to display
+; Print the CPU benchmark results
+; Inputs: SI has the string value of the benchmark result
 ; Output: None
 ; Destroys: None
 ;----
 PUBLIC _UI_PRINT_CPU_BENCHMARK
-_UI_PRINT_CPU_BENCHMARK PROC    
+_UI_PRINT_CPU_BENCHMARK PROC
+    push si
+
 	mov _SCRN_Attribute,DYN_INFO_STYLE	
-	mov _SCRN_Position_X,CPU_BENCH_COL
-	mov _SCRN_Position_Y,CPU_BENCH_ROW
+	mov _SCRN_Position_X,CPU_BENCH_RESULT_COL
+	mov _SCRN_Position_Y,CPU_BENCH_RESULT_ROW
+    lea si,BenchmarkResultMsg    
+    call _SCRN_PRINT_TEXT
+    
+    pop si  	
+	mov _SCRN_Position_X,CPU_BENCH_RESULT_VA_COL
 	call _SCRN_PRINT_TEXT
 	ret
+	
 _UI_PRINT_CPU_BENCHMARK ENDP
 
 ;----
@@ -609,8 +651,6 @@ FD_TEST_CALCULATE_BASE_ROW PROC
 	ret
 FD_TEST_CALCULATE_BASE_ROW ENDP
 
-
-
 ;----
 ; _UI_PROMPT_PCSPKR_PLAYING
 ; Display a message to the user that the speaker test is playing,
@@ -634,21 +674,24 @@ _UI_PROMPT_PCSPKR_PLAYING PROC
     ret
 _UI_PROMPT_PCSPKR_PLAYING ENDP
 
-PUBLIC _UI_SET_CPU_BENCH_TEST_MSG
-_UI_SET_CPU_BENCH_TEST_MSG PROC
-	
-	lea si,TestingCPUMsg
-	call _UI_SET_STATUS
-	
-	lea si,NoValue
-	mov _SCRN_Attribute,DYN_INFO_STYLE	
-	mov _SCRN_Position_X,CPU_BENCH_COL
-	mov _SCRN_Position_Y,CPU_BENCH_ROW
-	call _SCRN_PRINT_TEXT
-    
-	ret
-_UI_SET_CPU_BENCH_TEST_MSG ENDP
 
+;----
+; _UI_DISPLAY_PRESS_ANY_KEY
+; Display a message to the user that the speaker test is playing,
+; but that it can be interrupted with any key
+; Inputs: none
+; Output: none
+; Destroys: none
+;----
+PUBLIC _UI_DISPLAY_PRESS_ANY_KEY
+_UI_DISPLAY_PRESS_ANY_KEY PROC
+        
+    call _UI_CLEAR_PROMPT
 
-	
+    lea si,PressAnyKeyToContinue
+    call _UI_SET_STATUS
+
+    ret
+_UI_DISPLAY_PRESS_ANY_KEY ENDP
+
 END

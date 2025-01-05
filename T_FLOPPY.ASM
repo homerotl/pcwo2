@@ -73,7 +73,9 @@
 	EXTRN _UI_FD_READ_TEST_RESULT:PROC
 	EXTRN _UI_PROMPT_INSERT_MEDIA:PROC
 	EXTRN _UI_CLEAR_PROMPT:PROC
+    EXTRN _UI_DISPLAY_PRESS_ANY_KEY:PROC
 	EXTRN _KB_YES_NO_Q:PROC							; From LIB/KB.ASM
+	EXTRN _KB_WAIT_ANY_KEY:PROC
 
 ;----
 ; _TEST_FLOPPY 
@@ -192,6 +194,9 @@ TF_NextDrive:
 	jmp TF_Continue
 
 TF_Done:
+    call _UI_DISPLAY_PRESS_ANY_KEY
+    call _KB_WAIT_ANY_KEY
+
 	ret
 _TEST_FLOPPY ENDP
 
@@ -264,7 +269,7 @@ ErrorNotSystemRetryable:
 	
 	lea si,RetryMsgQ
 	call _UI_SET_STATUS
-		
+
 	call _KB_YES_NO_Q			; Check for the answer
 	cmp al,0					; If No
 	

@@ -36,6 +36,7 @@
 
 	CPUUnknownLbl				db 'Unknown', 0	
 	FPUUnknownLbl				db 'Unknown', 0
+	CpuTestRunningMsg           db 'CPU Test running...'
 	
 .CODE
 	.8086
@@ -49,16 +50,19 @@
     EXTRN _UI_PRINT_CPU_ID:PROC					; FROM UI.ASM
     EXTRN _UI_PRINT_FPU_ID:PROC
     EXTRN _UI_PRINT_CPU_BENCHMARK:PROC
-    EXTRN _UI_SET_CPU_BENCH_TEST_MSG:PROC
+    EXTRN _UI_SET_STATUS:PROC 
    	EXTRN _UI_CLEAR_STATUS:PROC
-        
+   	EXTRN _UI_DISPLAY_PRESS_ANY_KEY:PROC
+   	        
     EXTRN _TIME_SETUP_PIT:PROC					; FROM LIB/TIME.ASM
     EXTRN _TIME_START_TIMER:PROC
     EXTRN _TIME_HAS_TIMER_EXPIRED:PROC
 
 	EXTRN _MATH_PRIME_SIEVE:PROC				; FROM LIB/MATH.ASM
 	EXTRN _MATH_PRIME_COUNT:PROC
-        
+
+	EXTRN _KB_WAIT_ANY_KEY:PROC                 ; From LIB/KB.ASM
+	
 ;----
 ; _TEST_CPU_FPU_DETECTION
 ; Run one-time detection routines. Set found values to the screen
@@ -139,7 +143,8 @@ _TEST_BENCHMARK_CPU PROC
 	push ax	
 	push cx
 	
-	call _UI_SET_CPU_BENCH_TEST_MSG
+	lea si,CpuTestRunningMsg			
+    call _UI_SET_STATUS
 	
 	mov _PRIME_N,2710h						; Set N, length of the array
 	mov _PRIME_NSQ,0064h					; Set SQRT(N)
@@ -169,16 +174,19 @@ T_BCPU_Repeat:
 	jmp T_BCPU_Repeat
 	
 T_BCPU_Ended:
-	
+
+	call _UI_CLEAR_STATUS
+
 	mov ax,cx
 	call _STR_INT_TO_STRING
 	
 	lea si,_IntToStringBuffer
-
+	
 	call _UI_PRINT_CPU_BENCHMARK
 	
-	call _UI_CLEAR_STATUS
-	
+	call _UI_DISPLAY_PRESS_ANY_KEY
+    call _KB_WAIT_ANY_KEY
+    
 	pop cx
 	pop ax
 	

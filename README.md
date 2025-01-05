@@ -15,7 +15,7 @@ this project is my pretext to learn it.
 
 ## Available Tests
 
- * CPU identification
+ * CPU anf FPU identification
  * Floppy drive identification and read test
  * PC Speaker test with music
  * Screen geometry test (MCGA 320x200)
@@ -55,7 +55,6 @@ file `PCWO2.EXE`
  
 ## Other feature ideas
 
-  * Auto-increment release numbers
   * Graphical interface
   * Run with a pre-programmed sequence (no prompts)
   * Better error handling on disk read error
