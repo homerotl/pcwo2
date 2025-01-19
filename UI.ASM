@@ -8,6 +8,9 @@
 	INCLUDE VERSION.INC
 
     DEFAULT_VIDEO_MODE      EQU 03h ; 03h is 80x25. Could be set to 01h for 40x25
+    
+    COLUMNS                 EQU 80
+    ROWS                    EQU 25
     	
 ; Color schema
 
@@ -132,7 +135,8 @@
 	EXTRN _SCRN_PRINT_CHAR:PROC
 	EXTRN _SCRN_SAVE_OSCREEN:PROC
 	EXTRN _SCRN_RESTORE_OSCREEN:PROC
-
+	EXTRN _STR_STR_LEN:PROC                         ; From LIB/STRINGS.ASM
+	
 ;----
 ; _UI_ENSURE_MENU_VIDEO_MODE
 ; Ensure menu video mode
@@ -235,10 +239,18 @@ RENDER_LABELS ENDP
 ;----
 PUBLIC _UI_SET_STATUS
 _UI_SET_STATUS PROC
+    push ax
+    push cx                             ; save cx
+    call _STR_STR_LEN                   ; get string length on cx
+    mov ax,COLUMNS                      ; x = (80 - cx) / 2
+    sub ax,cx
+    shr ax,1                            ; divde by 2
 	mov _SCRN_Attribute,STATUS_STYLE	
-	mov _SCRN_Position_X,STATUS_COL
+	mov _SCRN_Position_X,al
 	mov _SCRN_Position_Y,STATUS_ROW
 	call _SCRN_PRINT_TEXT
+	pop cx
+	pop ax
 	ret
 _UI_SET_STATUS ENDP
 
@@ -251,10 +263,18 @@ _UI_SET_STATUS ENDP
 ;----
 PUBLIC _UI_SET_PROMPT
 _UI_SET_PROMPT PROC
+    push ax
+    push cx                             ; save cx
+    call _STR_STR_LEN                   ; get string length on cx
+    mov ax,COLUMNS                      ; x = (80 - cx) / 2
+    sub ax,cx
+    shr ax,1                            ; divde by 2
 	mov _SCRN_Attribute,STATUS_STYLE	
-	mov _SCRN_Position_X,PROMPT_COL
+	mov _SCRN_Position_X,al
 	mov _SCRN_Position_Y,PROMPT_ROW
 	call _SCRN_PRINT_TEXT
+	pop cx
+	pop ax
 	ret
 _UI_SET_PROMPT ENDP
 

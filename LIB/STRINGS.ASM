@@ -193,4 +193,32 @@ S_BC_Continue:
 	ret
 _STR_BUFFER_COPY ENDP
 
+;----
+; _STR_STR_LEN 
+; Returns the length of a null-terminated string. 
+; Inputs:
+;   - si - start index of the string
+; Output: 
+; 	- cx - length of the string
+; Destroys: cx
+;----
+PUBLIC _STR_STR_LEN
+_STR_STR_LEN PROC
+    push si                 ; save si
+    push ax
+    xor cx,cx               ; cx = 0
+STR_Str_Len_Loop:
+    mov al,[si]
+    cmp al,0
+    je STR_Str_Len_End
+    inc cx
+    jo STR_Str_Len_End      ; we exceeded the maximum length 
+    inc si
+    jmp STR_Str_Len_Loop
+STR_Str_Len_End:
+    pop ax
+    pop si
+	ret
+_STR_STR_LEN ENDP
+
 END
