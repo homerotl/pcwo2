@@ -92,6 +92,8 @@
    	TestingCPUMsg				db 'Testing CPU...', 0
     BenchmarkResultMsg          db 'CPU Score:',0
     
+    HelloWorldMsg               db 'Hello World!',0 
+    
 	PUBLIC _BlankColStart
 	_BlankColStart				db 0
 	
@@ -136,6 +138,9 @@
 	EXTRN _SCRN_SAVE_OSCREEN:PROC
 	EXTRN _SCRN_RESTORE_OSCREEN:PROC
 	EXTRN _STR_STR_LEN:PROC                         ; From LIB/STRINGS.ASM
+	EXTRN _WINDOW_SETUP:PROC                        ; From LIB/WINDOW.ASM
+	EXTRN _WINDOW_SHOW:PROC
+	EXTRN _WINDOW_WRITELN:PROC
 	
 ;----
 ; _UI_ENSURE_MENU_VIDEO_MODE
@@ -563,6 +568,14 @@ PUBLIC _UI_DISPLAY_MENU
 _UI_DISPLAY_MENU PROC	
 	lea si,Buttons
 	call RENDER_BUTTONS
+	
+	; TODO: Remove from here
+	;call _WINDOW_SETUP
+	;call _WINDOW_SHOW
+	
+	;lea si,HelloWorldMsg
+	;call _WINDOW_WRITELN
+	
 	ret
 _UI_DISPLAY_MENU ENDP
 

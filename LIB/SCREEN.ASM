@@ -160,7 +160,7 @@ _SCRN_PRINT_TEXT PROC
 	
 	mov al,_SCRN_Position_Y
 	mov cl,C80
-	mul cl						; ax = (Y * 40) + X
+	mul cl						; ax = (Y * SCREEN_WIDTH) + X
 	mov cl,_SCRN_Position_X     ; cx = 00 xx
 	mov ch,00h
 	add ax,cx                   ; ax = ax + cx
